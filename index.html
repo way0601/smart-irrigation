@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>逐光巡墒——智慧墒情巡检与旱情预警系统</title>
+<style>
+/* ============================================================
+   1. CSS 变量
+   ============================================================ */
+:root{
+  --primary:#009a4e;
+  --primary-soft:rgba(0,154,78,.12);
+  --primary-glow:rgba(0,154,78,.25);
+  --cyan:#0288d1;
+  --warning:#f57c00;
+  --warning2:#ef6c00;
+  --danger:#d32f2f;
+  --danger2:#c62828;
+  --blue:#1976d2;
+  --purple:#7b1fa2;
+  --bg-main:#f5f7f5;
+  --bg-sub:#e8efe9;
+  --panel-bg:rgba(255,255,255,.96);
+  --panel-strong:rgba(255,255,255,1);
+  --border-soft:rgba(0,154,78,.18);
+  --border-dim:rgba(0,154,78,.08);
+  --text-main:#1b3a2a;
+  --text-sub:#4a6a5a;
+  --text-dim:#7a9080;
+  --card-shadow:0 2px 8px rgba(0,80,30,.08),0 1px 2px rgba(0,0,0,.04);
+  --card-shadow-hover:0 6px 20px rgba(0,154,78,.16),0 2px 4px rgba(0,0,0,.06);
+}
+/* ============================================================
+   2. Reset & Base
+   ============================================================ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100vh;overflow:hidden;font-family:"Inter","DIN Alternate","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-main);color:var(--text-main);font-size:14px;line-height:1.5}
+/* ============================================================
+   3. Background
+   ============================================================ */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(circle at 15% 10%,rgba(0,154,78,.06),transparent 30%),
+    radial-gradient(circle at 85% 75%,rgba(25,118,210,.04),transparent 35%),
+    linear-gradient(180deg,#f5f7f5 0%,#e8efe9 100%);}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,154,78,.04)1px,transparent 1px),linear-gradient(90deg,rgba(0,154,78,.04)1px,transparent 1px);
+  background-size:40px 40px;opacity:.5;}
+/* ============================================================
+   4. Layout Shell
+   ============================================================ */
+.shell{display:flex;height:100vh;overflow:hidden;position:relative;z-index:1}
+/* ============================================================
+   5. Sidebar
+   ============================================================ */
+.sidebar{width:175px;flex-shrink:0;
+  background:linear-gradient(180deg,#ffffff 0%,#f5f7f5 100%);
+  border-right:1px solid rgba(0,154,78,.18);
+  box-shadow:2px 0 8px rgba(0,80,30,.06);
+  display:flex;flex-direction:column;z-index:10;position:relative}
+.sb-logo-area{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--border-soft);position:relative;z-index:1}
+.sb-logo{width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),#00a84e);
+  box-shadow:0 2px 8px rgba(0,154,78,.3);
+  display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
+.sb-logo-text{font-size:15px;font-weight:700;color:var(--text-main);white-space:nowrap}
+.sb-ver{font-size:9px;color:var(--text-dim);margin-left:2px}
+.sb-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 6px;display:flex;flex-direction:column;gap:2px;position:relative;z-index:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text-sub);font-size:13px;transition:all .25s ease;white-space:nowrap;border:none;background:transparent;width:100%;text-align:left;position:relative}
+.nav-item:hover{background:rgba(0,154,78,.08);color:var(--primary);transform:translateX(2px)}
+.nav-item.active{background:linear-gradient(90deg,rgba(0,154,78,.18),rgba(0,154,78,.04));color:var(--primary);font-weight:600;border:1px solid rgba(0,154,78,.25);position:relative}
+.nav-item.active::before{content:'';position:absolute;left:0;top:15%;width:3px;height:70%;border-radius:999px;background:var(--primary);box-shadow:0 0 6px rgba(0,154,78,.5)}
+.nav-item .ni-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.nav-badge{font-size:10px;padding:2px 8px;border-radius:999px;
+  background:rgba(245,124,0,.15);
+  color:var(--warning);margin-left:auto;font-weight:700;border:1px solid rgba(245,124,0,.3);
+  animation:badgePulse 1.8s infinite ease-in-out}
+.sb-footer{padding:12px 14px;border-top:1px solid var(--border-soft);display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.sb-avatar{width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),#00a84e);
+  display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;flex-shrink:0}
+.sb-username{font-size:11px;color:var(--text-dim)}
+/* ============================================================
+   6. Main Area
+   ============================================================ */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative;z-index:1;background:transparent}
+/* ============================================================
+   7. Top Bar
+   ============================================================ */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(0,154,78,.18);
+  box-shadow:0 1px 4px rgba(0,80,30,.04);flex-shrink:0;position:relative;z-index:5}
+.tb-left{display:flex;align-items:center;gap:18px;position:relative;z-index:1}
+.tb-title{font-size:22px;font-weight:800;color:var(--text-main);white-space:nowrap;letter-spacing:1px}
+.tb-subtitle{font-size:10px;color:var(--text-dim);white-space:nowrap;letter-spacing:.8px}
+.tb-ind{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim)}
+.tb-ind .clock{font-size:14px;font-family:"DIN Alternate","Consolas",monospace;color:var(--primary);letter-spacing:1px;font-weight:600}
+.tb-ind .batt{width:18px;height:8px;border:1px solid var(--primary);border-radius:2px;position:relative;background:#fff}
+.tb-ind .batt::after{content:'';position:absolute;right:-3px;top:2px;width:3px;height:4px;background:var(--primary);border-radius:0 1px 1px 0}
+.tb-ind .batt-f{height:100%;background:var(--primary);transition:width 1.5s}
+.status-pill{font-size:10px;padding:4px 12px;border-radius:999px;
+  background:rgba(0,154,78,.1);color:var(--primary);white-space:nowrap;font-weight:600;
+  border:1px solid rgba(0,154,78,.25);position:relative;z-index:1}
+/* ============================================================
+   8. Decision Banner
+   ============================================================ */
+.dec-banner{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:14px 24px;margin:8px 16px;
+  background:linear-gradient(135deg,rgba(255,255,255,1),rgba(232,239,233,.6));
+  border:2px solid var(--primary);border-radius:14px;position:relative;
+  box-shadow:0 4px 16px rgba(0,154,78,.15)}
+.dec-banner.deny{border-color:var(--danger);background:linear-gradient(135deg,rgba(255,255,255,1),rgba(255,235,235,.6));box-shadow:0 4px 16px rgba(211,47,47,.15)}
+.dec-banner.warn{border-color:var(--warning);background:linear-gradient(135deg,rgba(255,255,255,1),rgba(255,243,224,.6));box-shadow:0 4px 16px rgba(245,124,0,.15)}
+.dec-left{display:flex;align-items:center;gap:14px;position:relative;z-index:1;flex:1;min-width:0}
+.dec-icon{font-size:32px;position:relative;z-index:1;flex-shrink:0}
+.dec-text{font-size:22px;font-weight:800;position:relative;z-index:1;line-height:1.1}
+.dec-text.allow{color:var(--primary)}
+.dec-text.deny{color:var(--danger)}
+.dec-text.warn{color:var(--warning)}
+.dec-detail{font-size:12px;color:var(--text-sub);margin-top:4px;position:relative;z-index:1;line-height:1.4}
+.dec-tags{display:flex;gap:6px;position:relative;z-index:1;flex-shrink:0}
+.dec-tag{font-size:10px;padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:3px;font-weight:600;border:1px solid;transition:all .3s}
+.dec-tag.ok,.dec-tag.ready{color:var(--primary);background:rgba(0,154,78,.12);border-color:rgba(0,154,78,.25)}
+.dec-tag.warn{color:var(--warning);background:rgba(245,124,0,.12);border-color:rgba(245,124,0,.25)}
+.dec-tag.danger{color:var(--danger);background:rgba(211,47,47,.12);border-color:rgba(211,47,47,.25)}
+/* ============================================================
+   9. Flow Steps
+   ============================================================ */
+.flow-bar{display:flex;align-items:center;flex-shrink:0;padding:8px 28px;margin:0 16px 8px;
+  background:rgba(255,255,255,.7);border:1px solid rgba(0,154,78,.15);border-radius:10px;position:relative}
+.fs{flex:1;text-align:center;font-size:11px;color:var(--text-dim);position:relative;padding:3px 2px;font-weight:500;z-index:1;transition:all .35s}
+.fs.active{color:var(--primary);font-weight:600}
+.fs .fs-n{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;background:rgba(0,154,78,.1);font-size:10px;margin-right:4px;vertical-align:middle;text-align:center;border:1px solid rgba(0,154,78,.2);transition:all .35s}
+.fs.active .fs-n{background:var(--primary);color:#fff;box-shadow:0 2px 6px rgba(0,154,78,.4);border-color:transparent}
+/* ============================================================
+   10. Panel Grids
+   ============================================================ */
+.panel{display:none;flex:1;overflow-y:auto;overflow-x:hidden;flex-direction:column;min-height:0}
+.panel.show{display:flex}
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:rgba(0,154,78,.12);border-radius:3px}
+.dash-grid{flex:1;display:flex;flex-direction:column;gap:10px;padding:10px 16px;overflow:hidden;min-height:0}
+.dr1{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;flex:0 0 auto;min-height:0}
+.dr2{display:grid;grid-template-columns:1.3fr 0.9fr 0.8fr;gap:10px;flex:1;min-height:0}
+.dr3{display:grid;grid-template-columns:1.15fr 0.85fr;gap:8px;flex:0 0 auto}
+#panel-soil,#panel-energy{flex-direction:column;padding:8px 12px;gap:8px}
+
+.an-top{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;flex-shrink:0}
+.an-mid{flex:1;display:flex;min-height:0}
+.an-mid .card{flex:1}
+.an-chart-wrap{flex:1;min-height:60px;position:relative;overflow:hidden;padding:4px}
+.an-chart-wrap canvas{width:100%!important;height:100%!important;display:block}
+.an-chart-wrap::before{content:'';position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,154,78,.4),transparent);z-index:5;pointer-events:none;animation:scanLine 3s linear infinite}
+.an-legend{display:flex;gap:16px;justify-content:center;font-size:8px;color:var(--text-dim);padding:4px 0;flex-shrink:0}
+.an-energy{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;flex-shrink:0}
+.an-en-mid{display:grid;grid-template-columns:1.35fr 0.65fr;gap:10px;flex-shrink:0;min-height:155px}
+.an-en-mid .card{min-height:0;overflow:hidden}
+.an-en-mid .chart-wrap{min-height:90px;flex:1}
+.an-en-mid .donut-wrap{min-height:0;padding:4px 6px;gap:6px}
+.an-en-bot{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;flex-shrink:0}
+.an-salt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0}
+.an-ec-trend{flex-shrink:0;height:135px}
+.an-ec-trend .card{height:100%}
+.en-insight-row{display:grid;grid-template-columns:1.2fr 0.8fr;gap:8px;flex-shrink:0}
+.en-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex-shrink:0;height:105px}
+.en-charts-row .card{height:100%;min-height:0;overflow:hidden}
+.en-charts-row .chart-wrap{flex:1;min-height:0}
+.an-en-flow{flex-shrink:0;height:100px}
+.an-en-flow .card{height:100%;overflow:hidden}
+.an-en-flow .chart-wrap{flex:1;min-height:0}
+.irrig-pulse-wrap{height:55px;flex-shrink:0;margin-top:8px}
+.irrig-pulse-wrap canvas{width:100%!important;height:100%!important;display:block}
+#panel-ctrl{flex-direction:column;padding:8px 12px;gap:8px}
+.ctrl-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex-shrink:0}
+.ctrl-mid{display:grid;grid-template-columns:0.85fr 1.15fr;gap:8px;flex:1;min-height:0}
+/* Panel 5: Decision Advice */
+#panel-advice{flex-direction:column;padding:0;overflow-y:auto}
+.advice-panel .adv-top,.advice-panel .adv-mid,.advice-panel .adv-bot,.advice-panel .adv-bot-extra,.advice-panel .adv-bot-heat{display:none!important}
+.advice-layout{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;padding:10px 14px;overflow:auto;flex:1}
+.advice-decision-card{grid-column:span 12;position:relative;overflow:hidden;border-radius:18px;padding:16px 20px;
+  background:radial-gradient(circle at 12% 20%,rgba(0,154,78,.18),transparent 30%),linear-gradient(135deg,rgba(18,42,30,.96),rgba(8,20,15,.92));
+  border:1px solid rgba(0,154,78,.22);box-shadow:0 18px 42px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.06);animation:fadeUp .45s ease both}
+.advice-decision-card.deny{background:radial-gradient(circle at 12% 20%,rgba(255,82,82,.18),transparent 30%),linear-gradient(135deg,rgba(42,18,18,.94),rgba(12,8,8,.92));border-color:rgba(255,82,82,.28)}
+.advice-decision-main{display:flex;align-items:center;gap:14px}
+.advice-decision-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(0,154,78,.14);box-shadow:0 0 24px rgba(0,154,78,.22);flex-shrink:0}
+.advice-decision-card.deny .advice-decision-icon{background:rgba(255,82,82,.14);box-shadow:0 0 24px rgba(255,82,82,.22)}
+.advice-decision-title{font-size:22px;font-weight:800;color:#fff}
+.advice-decision-desc{margin-top:4px;font-size:11px;color:#fff;line-height:1.6}
+.advice-decision-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.advice-tag{padding:3px 10px;border-radius:999px;font-size:9px;font-weight:600;border:1px solid}
+.advice-tag.green{color:var(--primary);background:rgba(0,154,78,.1);border-color:rgba(0,154,78,.2)}
+.advice-tag.cyan{color:var(--cyan);background:rgba(24,255,255,.08);border-color:rgba(24,255,255,.18)}
+.advice-tag.orange{color:var(--warning);background:rgba(255,171,64,.1);border-color:rgba(255,171,64,.2)}
+.advice-tag.red{color:var(--danger);background:rgba(255,82,82,.1);border-color:rgba(255,82,82,.2)}
+.advice-lock-card{grid-column:span 6;animation:fadeUp .45s ease .05s both}
+.advice-action-card{grid-column:span 3;animation:fadeUp .45s ease .1s both}
+.advice-param-card{grid-column:span 3;animation:fadeUp .45s ease .15s both}
+.advice-energy-card{grid-column:span 6;animation:fadeUp .45s ease .2s both}
+.advice-trend-card{grid-column:span 6;animation:fadeUp .45s ease .25s both}
+.lock-flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr;align-items:stretch;gap:6px;padding:10px 12px 12px}
+.lock-step{border-radius:12px;padding:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative}
+.lock-step.pass{border-color:rgba(0,154,78,.24);box-shadow:inset 0 0 18px rgba(0,154,78,.06)}
+.lock-step.warn{border-color:rgba(255,171,64,.28)}
+.lock-step.danger{border-color:rgba(255,82,82,.32);box-shadow:inset 0 0 20px rgba(255,82,82,.08)}
+.lock-icon{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(0,154,78,.12);color:var(--primary);font-weight:800;font-size:11px;margin-bottom:6px}
+.lock-title{font-size:12px;font-weight:700;color:var(--text-main)}
+.lock-value{margin-top:4px;font-size:16px;font-weight:800;color:var(--primary);font-family:"DIN Alternate","Consolas",monospace}
+.lock-desc{margin-top:3px;font-size:9px;color:var(--text-dim);line-height:1.4}
+.lock-line{height:2px;align-self:center;background:linear-gradient(90deg,rgba(0,154,78,.15),var(--primary),rgba(0,154,78,.15));box-shadow:0 0 8px rgba(0,154,78,.35)}
+.action-main{padding:10px 12px}
+.action-title{font-size:18px;font-weight:800;color:var(--primary);text-shadow:0 0 12px rgba(0,154,78,.32)}
+.action-desc{margin-top:6px;font-size:10px;color:var(--text-sub);line-height:1.6}
+.action-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.action-item{position:relative;padding:6px 8px 6px 22px;border-radius:8px;background:rgba(0,154,78,.04);border:1px solid rgba(0,154,78,.08);font-size:10px;color:var(--text-main)}
+.action-item::before{content:"✓";position:absolute;left:8px;color:var(--primary);font-weight:800;font-size:10px}
+.action-reasons{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 10px}
+.action-reasons .advice-tag{font-size:9px;padding:3px 10px}
+.param-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:8px 10px}
+.param-item{padding:8px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.05)}
+.param-label{display:block;font-size:9px;color:var(--text-dim);margin-bottom:3px}
+.param-value{font-size:20px;font-weight:800;font-family:"DIN Alternate","Consolas",monospace}
+.param-value.green{color:var(--primary)}.param-value.orange{color:var(--warning)}.param-value.red{color:var(--danger)}.param-value.blue{color:var(--blue)}.param-value.purple{color:var(--purple)}
+.energy-advice{padding:8px 12px 10px}
+.energy-status{display:flex;align-items:center;justify-content:space-between}
+.energy-bar{margin-top:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.energy-bar-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--cyan));box-shadow:0 0 12px rgba(0,154,78,.35);transition:width 1.5s}
+.energy-tip{margin-top:8px;font-size:10px;color:var(--text-sub);line-height:1.6}
+.trend-body{padding:8px 12px 10px}
+.trend-time-line{display:flex;align-items:center;gap:0}
+.trend-node{flex:1;text-align:center;padding:10px 6px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}
+.trend-node span{display:block;font-size:9px;color:var(--text-dim);margin-bottom:3px}
+.trend-node strong{font-size:12px;color:var(--text-main)}
+.trend-node.recommend{border-color:rgba(0,154,78,.28);background:rgba(0,154,78,.08);box-shadow:0 0 16px rgba(0,154,78,.12)}
+.trend-node.risk{border-color:rgba(255,171,64,.28)}
+.trend-arrow{width:20px;height:2px;flex-shrink:0;background:linear-gradient(90deg,rgba(0,154,78,.15),var(--primary));box-shadow:0 0 6px var(--primary-glow)}
+.intro-body{padding:8px 14px 10px;font-size:10px;color:var(--text-sub);line-height:1.7}
+.intro-body p{margin:0}
+.intro-body strong{color:var(--text-main)}
+@media(max-width:1024px){.advice-lock-card,.advice-action-card,.advice-param-card,.advice-energy-card,.advice-trend-card{grid-column:span 12}.lock-flow{grid-template-columns:1fr}.lock-line{width:2px;height:16px;justify-self:center}}
+.adv-bot{flex-shrink:0;display:flex}
+.adv-bot .card{flex:1}
+.adv-bot-extra{display:grid;grid-template-columns:1.2fr 0.8fr;gap:6px;flex-shrink:0}
+.adv-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px}
+.adv-stage-label{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.adv-stage-name{font-size:22px;font-weight:800;color:var(--primary);text-shadow:0 0 14px var(--primary-glow);font-family:"DIN Alternate","Consolas",monospace}
+.adv-stage-desc{font-size:9px;color:var(--text-dim);margin-top:4px;text-align:center}
+.adv-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0}
+.adv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.adv-dot.green{background:var(--primary);box-shadow:0 0 8px var(--primary-glow)}
+.adv-dot.orange{background:var(--warning);box-shadow:0 0 8px rgba(255,171,64,.4)}
+.adv-dot.red{background:var(--danger);box-shadow:0 0 8px rgba(255,82,82,.4)}
+.adv-dot.blue{background:var(--blue);box-shadow:0 0 8px rgba(68,138,255,.4)}
+.adv-dot.purple{background:var(--purple);box-shadow:0 0 8px rgba(179,136,255,.4)}
+.adv-text{font-size:10px;color:var(--text-sub);flex:1;line-height:1.5}
+.adv-text strong{color:var(--text-main)}
+.adv-param{background:rgba(0,154,78,.05);border:1px solid rgba(0,154,78,.1);border-radius:10px;padding:8px 10px;text-align:center}
+.adv-param .ap-l{font-size:8px;color:var(--text-dim);margin-bottom:3px}
+.adv-param .ap-v{font-size:18px;font-weight:700;font-family:"Consolas",monospace;line-height:1.1}
+.adv-param .ap-v.green{color:var(--primary)}.adv-param .ap-v.orange{color:var(--warning)}.adv-param .ap-v.purple{color:var(--purple)}.adv-param .ap-v.blue{color:var(--blue)}
+/* ============================================================
+   11. Cards
+   ============================================================ */
+.card{
+  background:#ffffff;
+  border:1px solid rgba(0,154,78,.18);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:var(--card-shadow);
+  position:relative;transition:all .25s ease}
+.card::before{content:'';position:absolute;left:14px;right:14px;top:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--primary),transparent);opacity:.4;pointer-events:none;z-index:2}
+.card:hover{transform:translateY(-2px);box-shadow:var(--card-shadow-hover)}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;flex-shrink:0;position:relative;z-index:1;border-bottom:1px solid rgba(0,154,78,.1)}
+.card-hdr .lbl{font-size:13px;font-weight:700;color:var(--text-main);display:flex;align-items:center;gap:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card-hdr .lbl::before{content:'';min-width:3px;width:3px;height:14px;border-radius:999px;background:var(--primary);flex-shrink:0}
+.card-body{flex:1;padding:8px 14px 12px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;min-height:0;position:relative;z-index:1}
+.card-body::-webkit-scrollbar{width:3px}
+.card-body::-webkit-scrollbar-track{background:transparent}
+.card-body::-webkit-scrollbar-thumb{background:rgba(0,154,78,.15);border-radius:2px}
+.card-center{justify-content:center;align-items:center}
+/* ============================================================
+   12. Badges & Status Pills
+   ============================================================ */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;transition:all .25s}
+.badge-ok{color:var(--primary);background:rgba(0,154,78,.1);border:1px solid rgba(0,154,78,.25)}
+.badge-warn{color:var(--warning);background:rgba(245,124,0,.1);border:1px solid rgba(245,124,0,.25)}
+.badge-danger{color:var(--danger);background:rgba(211,47,47,.1);border:1px solid rgba(211,47,47,.25)}
+.badge-purple{color:var(--purple);background:rgba(123,31,162,.08);border:1px solid rgba(123,31,162,.2)}
+.badge-blue{color:var(--blue);background:rgba(25,118,210,.08);border:1px solid rgba(25,118,210,.2)}
+.si-status{font-weight:500;font-size:10px;display:inline-flex;align-items:center;gap:3px}
+.si-status .dot{font-size:8px}
+.si-ok{color:var(--primary)}
+.si-warn{color:var(--warning)}
+.si-danger{color:var(--danger)}
+/* ============================================================
+   13. Metric Values
+   ============================================================ */
+.metric-val{font-size:28px;font-weight:800;color:#fff;line-height:1;text-shadow:0 0 14px rgba(0,154,78,.26);font-family:"DIN Alternate","Consolas",monospace}
+.metric-unit{font-size:12px;color:var(--text-sub);margin-left:3px}
+.metric-label{font-size:11px;color:var(--text-dim);margin-bottom:6px}
+.metric-card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;text-align:center}
+.metric-card .val{font-size:36px;font-weight:800;font-family:"DIN Alternate","Consolas",monospace;line-height:1.1;letter-spacing:-0.5px;animation:dataPulse 2.5s ease-in-out infinite}
+.metric-card .val.green{color:var(--primary)}
+.metric-card .val.orange{color:var(--warning)}
+.metric-card .val.white{color:var(--text-main)}
+.metric-card .sub{font-size:10px;color:var(--text-sub);margin-top:3px;font-weight:500}
+/* ============================================================
+   14. Environment Bars
+   ============================================================ */
+.env-card{flex:0 0 auto!important}
+.env-card-body{flex:1;display:flex;flex-direction:column;gap:8px;padding:6px 10px 8px;overflow:auto}
+.env-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:4px 0}
+.env-item{display:flex;align-items:center;gap:6px}
+.env-label{font-size:9px;color:var(--text-dim);min-width:40px}
+.env-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;box-shadow:inset 0 0 6px rgba(0,0,0,.3)}
+.env-bar-f{height:100%;border-radius:999px;transition:width 2s;
+  background:linear-gradient(90deg,#00a84e,var(--primary),#18ffff);
+  box-shadow:0 0 10px rgba(0,154,78,.45)}
+.ph-bar{background:linear-gradient(90deg,#448aff,#82b1ff)!important;box-shadow:0 0 10px rgba(68,138,255,.35)!important}
+.sal-bar{background:linear-gradient(90deg,#ffab40,#ff5252)!important;box-shadow:0 0 10px rgba(255,171,64,.35)!important}
+.ec-bar{background:linear-gradient(90deg,#b388ff,#ea80fc)!important;box-shadow:0 0 10px rgba(179,136,255,.35)!important}
+.env-val{font-size:9px;font-weight:600;color:var(--primary);min-width:48px;text-align:right;font-family:"Consolas",monospace}
+.ph-val{color:var(--blue)}.sal-val{color:var(--warning)}.ec-val{color:var(--purple)}
+.env-section-label{font-size:8px;color:var(--text-dim);font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:0 2px;display:flex;align-items:center;gap:6px}
+.env-section-label::after{content:'';flex:1;height:1px;background:rgba(0,154,78,.08)}
+.env-divider{width:100%;height:1px;background:rgba(0,154,78,.06);flex-shrink:0}
+/* ============================================================
+   15. NPK Nutrients
+   ============================================================ */
+.npk-row{display:flex;gap:10px;padding:6px 2px;flex:1}
+.npk-item{flex:1;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center}
+.npk-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#07110d;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.n-dot{background:linear-gradient(135deg,#448aff,#82b1ff);box-shadow:0 0 12px rgba(68,138,255,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.p-dot{background:linear-gradient(135deg,#ffab40,#ff9100);box-shadow:0 0 12px rgba(255,171,64,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.k-dot{background:linear-gradient(135deg,#b388ff,#ea80fc);box-shadow:0 0 12px rgba(179,136,255,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.npk-info{display:flex;align-items:baseline;gap:2px}
+.npk-v{font-size:16px;font-weight:700;color:var(--text-main);font-family:"Consolas",monospace;line-height:1}
+.npk-u{font-size:8px;color:var(--text-dim)}
+.npk-bar{flex:1;width:100%;min-height:8px;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 6px rgba(0,0,0,.3)}
+.npk-bar-f{height:100%;border-radius:999px;transition:width 2s}
+.npk-bar-f.n{background:linear-gradient(90deg,#448aff,#82b1ff);box-shadow:0 0 6px rgba(68,138,255,.25)}
+.npk-bar-f.p{background:linear-gradient(90deg,#ffab40,#ff9100);box-shadow:0 0 6px rgba(255,171,64,.25)}
+.npk-bar-f.k{background:linear-gradient(90deg,#b388ff,#ea80fc);box-shadow:0 0 6px rgba(179,136,255,.25)}
+/* ============================================================
+   16. Sensor Gauges
+   ============================================================ */
+.sen-row{display:flex;gap:6px;flex:1;min-height:0;align-items:stretch}
+.sen-gauge{width:68px;height:68px;flex-shrink:0;position:relative}
+.sen-svg{transform:rotate(-90deg);width:68px;height:68px}
+.sg-bg{fill:none;stroke:rgba(0,154,78,.12);stroke-width:5}
+.sg-fg{fill:none;stroke-width:5;stroke-linecap:round;transition:stroke-dasharray .8s;
+  filter:drop-shadow(0 0 4px rgba(0,154,78,.3))}
+.sg-ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sg-ctr .v{font-size:18px;font-weight:800;color:var(--primary);line-height:1;
+  font-family:"DIN Alternate","Consolas",monospace}
+.sg-ctr .u{font-size:8px;color:var(--text-dim);margin-top:1px}
+.sen-info{flex:1;display:flex;flex-direction:column;gap:2px;justify-content:center;font-size:10px;color:var(--text-dim);overflow:hidden;padding-left:6px}
+.sen-info .si-row{display:flex;justify-content:space-between;line-height:1.7}
+.sen-info .si-v{color:var(--text-sub);font-weight:500;font-size:10px}
+.sen-spark{height:16px;flex-shrink:0;margin-top:2px}
+.sen-spark canvas{width:100%;height:100%}
+/* ============================================================
+   17. Threshold Badges
+   ============================================================ */
+.thr-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:3px 8px;border-radius:999px;font-weight:600}
+.thr-badge.low{background:rgba(255,171,64,.08);color:var(--warning);border:1px solid rgba(255,171,64,.15)}
+.thr-badge.high{background:rgba(0,154,78,.08);color:var(--primary);border:1px solid rgba(0,154,78,.15)}
+/* ============================================================
+   18. Chart Containers
+   ============================================================ */
+.chart-wrap{flex:1;min-height:60px;max-height:100%;position:relative;overflow:hidden;animation:chartGlow 4s ease-in-out infinite}
+.chart-wrap canvas{width:100%!important;height:100%!important;display:block}
+.chart-wrap::before{content:'';position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,154,78,.35),transparent);z-index:5;pointer-events:none;animation:scanLine 3.5s linear infinite}
+.chart-legend{display:flex;gap:12px;justify-content:center;font-size:8px;color:var(--text-dim);padding:3px 0}
+.chart-legend .ldot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle;margin-right:3px;box-shadow:0 0 4px currentColor}
+.chart-legend .lbar{display:inline-block;width:8px;height:2px;vertical-align:middle;margin-right:3px;border-radius:1px}
+/* ============================================================
+   19. Interlock
+   ============================================================ */
+.il-grid{display:flex;flex-direction:column;gap:4px;flex:1;overflow:hidden}
+.il-sec{margin-bottom:3px}
+.il-sec-t{font-size:8px;color:var(--text-dim);letter-spacing:.8px;margin-bottom:2px;padding-left:4px;font-weight:600;text-transform:uppercase}
+.il-row{display:flex;align-items:center;gap:6px;padding:5px 8px;
+  background:rgba(0,154,78,.04);border-radius:8px;border-left:3px solid;
+  font-size:9px;transition:all .3s}
+.il-row.off{border-left-color:rgba(0,154,78,.06)!important;opacity:.35;filter:grayscale(.5)}
+.il-ico{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;
+  background:rgba(0,154,78,.1);color:var(--primary);flex-shrink:0}
+.il-row.off .il-ico{background:rgba(0,154,78,.03);color:var(--text-dim)}
+.il-name{color:var(--text-dim);flex:1;font-size:8px}
+.il-st{font-weight:600;font-size:9px}
+.il-st.ok{color:var(--primary);text-shadow:0 0 6px rgba(0,154,78,.25)}
+.il-st.warn{color:var(--warning);text-shadow:0 0 6px rgba(255,171,64,.15)}
+.il-st.danger{color:var(--danger);text-shadow:0 0 6px rgba(255,82,82,.15)}
+/* ============================================================
+   20. Controls
+   ============================================================ */
+.toggle-grp{display:flex;background:rgba(0,154,78,.04);border-radius:10px;padding:3px;width:100%;max-width:170px;border:1px solid rgba(0,154,78,.1)}
+.toggle-btn{flex:1;text-align:center;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:500;cursor:pointer;transition:all .22s;color:var(--text-dim);border:none;background:transparent}
+.toggle-btn:hover{color:var(--primary);background:rgba(0,154,78,.06)}
+.toggle-btn.on{background:linear-gradient(135deg,#00a84e,#006e36);color:var(--primary);
+  box-shadow:0 0 14px var(--primary-glow),inset 0 1px 0 rgba(255,255,255,.08);font-weight:600}
+.pump-btn{padding:12px 28px;border-radius:14px;border:1px solid;font-size:14px;font-weight:700;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:8px;min-width:130px;justify-content:center;letter-spacing:.5px}
+.pump-btn.running{background:linear-gradient(180deg,rgba(0,154,78,.15),rgba(0,154,78,.05));
+  color:var(--primary);border-color:rgba(0,154,78,.28);
+  box-shadow:0 0 22px var(--primary-glow),inset 0 1px 0 rgba(0,154,78,.1);
+  animation:pulse 2s infinite}
+.pump-btn.stopped{background:rgba(0,154,78,.04);color:var(--text-dim);border-color:rgba(0,154,78,.08)}
+.pump-btn.stopped:hover{background:rgba(0,154,78,.08);color:var(--primary)}
+.pump-btn.locked{background:rgba(255,82,82,.08);color:var(--danger);cursor:not-allowed;border-color:rgba(255,82,82,.15)}
+.pump-btn.running .pi{animation:spin 1.5s linear infinite}
+.pump-meta{font-size:9px;color:var(--text-dim);text-align:center}
+.pump-info-box{margin-top:8px;padding:8px 12px;
+  background:rgba(0,154,78,.04);border-radius:10px;font-size:8px;color:var(--text-dim);
+  border:1px solid rgba(0,154,78,.08)}
+.pump-info-box .pi-row{display:flex;justify-content:space-between;margin:3px 0}
+.pump-info-box .pi-row .pi-val{color:var(--text-sub);font-weight:500}
+/* ============================================================
+   21. Stats Grid
+   ============================================================ */
+.stat-sm{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.stat-sm .ss{background:rgba(0,154,78,.04);border:1px solid rgba(0,154,78,.06);border-radius:8px;padding:4px 6px;display:flex;flex-direction:column;justify-content:center}
+.stat-sm .ss-l{font-size:8px;color:var(--text-dim)}
+.stat-sm .ss-v{font-size:13px;font-weight:600;color:var(--text-main);font-family:"Consolas",monospace}
+.stat-sm .ss-v.gr{color:var(--primary);text-shadow:0 0 8px var(--primary-glow)}
+.big-val{font-size:30px;font-weight:800;color:var(--primary);text-align:center;padding:6px 0;line-height:1;
+  font-family:"DIN Alternate","Consolas",monospace}
+.big-val.warn{color:var(--warning)}
+.big-label{font-size:10px;color:var(--text-sub);text-align:center;font-weight:500}
+/* ============================================================
+   22. Overview Mini-Cards
+   ============================================================ */
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-bottom:6px;flex-shrink:0}
+.ov-cell{background:rgba(0,154,78,.05);border:1px solid rgba(0,154,78,.1);border-radius:10px;padding:8px 10px;text-align:center;transition:all .2s}
+.ov-cell:hover{background:rgba(0,154,78,.08);border-color:rgba(0,154,78,.15)}
+.ov-cell-l{font-size:8px;color:var(--text-dim);margin-bottom:2px}
+.ov-cell-v{font-size:18px;font-weight:700;font-family:"Consolas",monospace;line-height:1.1}
+.ov-cell-v.green{color:var(--primary);text-shadow:0 0 8px rgba(0,154,78,.2)}
+.ov-cell-v.white{color:var(--text-main)}
+.ov-cell-v.purple{color:var(--purple)}
+.ov-cell-v.blue{color:var(--blue)}
+.ov-divider{width:100%;height:1px;background:rgba(0,154,78,.08);margin-bottom:4px}
+.ov-footer{font-size:8px;color:var(--text-dim);display:flex;justify-content:space-between;width:100%}
+/* ============================================================
+   23. Alerts
+   ============================================================ */
+.alert-scroll{flex:1;overflow-y:auto;overflow-x:hidden;min-height:0}
+.alert-scroll::-webkit-scrollbar{width:3px}
+.alert-scroll::-webkit-scrollbar-track{background:transparent}
+.alert-scroll::-webkit-scrollbar-thumb{background:rgba(0,154,78,.1);border-radius:2px}
+.al-item{display:flex;align-items:flex-start;gap:6px;padding:8px 10px;border-radius:10px;font-size:9px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  margin-bottom:6px;transition:all .2s}
+.al-item:hover{background:rgba(0,154,78,.07);transform:translateX(3px)}
+.al-item.danger{border-left:3px solid var(--danger)}
+.al-item.warn{border-left:3px solid var(--warning)}
+.al-item.info{border-left:3px solid var(--cyan)}
+.al-tm{color:var(--text-dim);font-size:8px;white-space:nowrap;min-width:28px;font-family:"Consolas",monospace}
+.al-msg{color:var(--text-sub);flex:1;line-height:1.4}
+/* ============================================================
+   24. Filter Buttons (Capsule)
+   ============================================================ */
+.filter-bar{display:flex;gap:4px;padding:2px 0;flex-shrink:0}
+.filter-btn{background:rgba(0,154,78,.06);color:var(--text-dim);
+  border:1px solid rgba(0,154,78,.12);border-radius:999px;
+  padding:5px 12px;font-size:10px;cursor:pointer;transition:all .22s}
+.filter-btn:hover{color:#fff;background:rgba(0,154,78,.14);box-shadow:0 0 14px rgba(0,154,78,.18)}
+.filter-btn.active{color:#07110d;background:linear-gradient(90deg,var(--primary),var(--cyan));
+  border-color:transparent;font-weight:700}
+/* ============================================================
+   25. Sliders & Safety
+   ============================================================ */
+.slid-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:8px 14px}
+.slid-row{display:flex;align-items:center;gap:8px;padding:5px 0}
+.slid-row label,.slid-label-warn,.slid-label-ok,.slid-label-danger{font-size:9px;font-weight:700;min-width:36px}
+.slid-label-warn{color:var(--warning)}.slid-label-ok{color:var(--primary)}.slid-label-danger{color:var(--danger)}
+.slid-row input[type=range]{flex:1;height:5px;-webkit-appearance:none;
+  background:linear-gradient(90deg,var(--warning),var(--primary));
+  border-radius:999px;outline:none}
+.slid-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),#00a84e);
+  border:2px solid #10261b;cursor:pointer;box-shadow:0 0 12px var(--primary-glow)}
+.slid-row .slid-v{font-size:11px;font-weight:700;color:var(--primary);min-width:38px;text-align:right;
+  font-family:"Consolas",monospace;text-shadow:0 0 6px var(--primary-glow)}
+.slid-row .slid-v.warn{color:var(--warning);text-shadow:0 0 6px rgba(255,171,64,.2)}
+.slid-row .slid-v.danger{color:var(--danger);text-shadow:0 0 6px rgba(255,82,82,.2)}
+.safety-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:8px 14px}
+.safety-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.safety-label{font-size:9px;font-weight:600;width:38px;text-align:right}
+.safety-label.danger{color:var(--danger)}
+.safety-label.warn{color:var(--warning)}
+.safety-bar{flex:1;height:6px;border-radius:999px;overflow:hidden;box-shadow:inset 0 0 6px rgba(0,0,0,.3);
+  background:rgba(255,255,255,.05)}
+.safety-bar-f{height:100%;border-radius:999px;transition:width .5s}
+.safety-bar-f.danger{background:var(--danger);box-shadow:0 0 8px rgba(255,82,82,.35)}
+.safety-bar-f.warn{background:var(--warning);box-shadow:0 0 8px rgba(255,171,64,.35)}
+.safety-val{font-size:11px;font-weight:700;font-family:"Consolas",monospace;min-width:50px;text-align:right}
+.safety-val.danger{color:var(--danger)}
+.safety-val.warn{color:var(--warning)}
+/* ============================================================
+   26. Salt-Alkali
+   ============================================================ */
+.salt-stat{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;text-align:center}
+.salt-v{font-size:22px;font-weight:700;font-family:"DIN Alternate","Consolas",monospace;text-shadow:0 0 8px rgba(179,136,255,.3)}
+.salt-v.green{color:var(--primary);text-shadow:0 0 8px var(--primary-glow)}
+.salt-v.blue{color:var(--blue);text-shadow:0 0 8px rgba(68,138,255,.3)}
+.salt-l{font-size:8px;color:var(--text-dim);margin-top:2px}
+.salt-bar-wrap{width:80%;height:5px;border-radius:999px;overflow:hidden;margin-top:6px;box-shadow:inset 0 0 6px rgba(0,0,0,.3)}
+.salt-bar-wrap.bg-purple{background:rgba(179,136,255,.08);border:1px solid rgba(179,136,255,.15)}
+.salt-bar-wrap.bg-green{background:rgba(0,154,78,.08);border:1px solid rgba(0,154,78,.15)}
+.salt-bar-wrap.bg-blue{background:rgba(68,138,255,.08);border:1px solid rgba(68,138,255,.15)}
+.salt-bar-f{height:100%;border-radius:999px;transition:width 2s}
+.salt-bar-f.purple{background:linear-gradient(90deg,#b388ff,#ea80fc);box-shadow:0 0 8px rgba(179,136,255,.3)}
+.salt-bar-f.green{background:linear-gradient(90deg,var(--primary),#18ffff);box-shadow:0 0 8px var(--primary-glow)}
+.salt-bar-f.blue{background:linear-gradient(90deg,#448aff,#82b1ff);box-shadow:0 0 8px rgba(68,138,255,.3)}
+/* ============================================================
+   27. Donut Container
+   ============================================================ */
+.donut-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;padding:6px 8px;min-height:100px}
+.donut-wrap>div{position:relative;min-height:60px}
+.donut-wrap canvas{width:100%!important;height:100%!important;display:block}
+/* ============================================================
+   28. Mini Stat Tile
+   ============================================================ */
+.mini-tile{background:rgba(0,154,78,.05);border:1px solid rgba(0,154,78,.1);border-radius:8px;padding:4px 6px}
+.mini-tile .mt-l{font-size:7px;color:var(--text-dim)}
+.mini-tile .mt-v{font-size:12px;font-weight:600;font-family:"Consolas",monospace}
+.mini-tile .mt-v.green{color:var(--primary);text-shadow:0 0 4px rgba(0,154,78,.2)}
+.mini-tile .mt-v.orange{color:var(--warning)}
+.mini-tile .mt-v.red{color:var(--danger)}
+.mini-tile .mt-v.white{color:var(--text-sub)}
+/* ============================================================
+   29. Dual Chart Mini Stats
+   ============================================================ */
+.dual-minis{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;flex-shrink:0}
+.dual-chart-area{flex:1;min-height:80px;position:relative}
+.dual-chart-area canvas{width:100%!important;height:100%!important;display:block}
+.dual-chart-area::before{content:'';position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,154,78,.35),transparent);z-index:5;pointer-events:none;animation:scanLine 3s linear infinite}
+/* ============================================================
+   30. Animations
+   ============================================================ */
+.anim{animation:fadeUp .45s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 22px var(--primary-glow),inset 0 1px 0 rgba(0,154,78,.1)}50%{box-shadow:0 0 36px var(--primary-glow),0 0 56px rgba(0,154,78,.14),inset 0 1px 0 rgba(0,154,78,.14)}}
+.pulse-danger{animation:pulseDanger 1.6s infinite}
+@keyframes pulseDanger{0%,100%{box-shadow:0 0 0 rgba(255,82,82,0)}50%{box-shadow:0 0 18px rgba(255,82,82,.32)}}
+@keyframes badgePulse{0%,100%{box-shadow:0 0 0 rgba(255,82,82,0)}50%{box-shadow:0 0 14px rgba(255,82,82,.4)}}
+@keyframes scanLine{0%{top:-2px;opacity:0}10%{opacity:.7}90%{opacity:.7}100%{top:100%;opacity:0}}
+@keyframes chartGlow{0%,100%{box-shadow:0 0 4px rgba(0,154,78,.06),inset 0 0 8px rgba(0,154,78,0)}50%{box-shadow:0 0 10px rgba(0,154,78,.12),inset 0 0 16px rgba(0,154,78,.03)}}
+@keyframes dataPulse{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes dashFlow{0%{background-position:0 0}100%{background-position:40px 0}}
+/* ============================================================
+   31. Responsive
+   ============================================================ */
+@media(max-width:1366px){
+  .metric-card .val{font-size:24px}.big-val{font-size:26px}
+  .card-hdr .lbl{font-size:12px}
+}
+@media(max-width:1280px){
+  .dr2{grid-template-columns:1fr 1fr}.dr2>*:last-child{display:none}
+  .an-top{grid-template-columns:1fr 1fr}.an-en-bot{grid-template-columns:1fr 1fr}
+  .an-ec-trend,.an-en-flow{height:105px}
+}
+@media(max-width:1024px){
+  .dr1{grid-template-columns:1fr}.dr2{grid-template-columns:1fr}
+  .dr2>*:last-child{display:flex}.an-top{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .shell{flex-direction:column}.sidebar{width:100%;height:auto;flex-shrink:0}
+  .dr1,.dr2,.an-top,.an-energy,.an-en-mid,.an-en-bot,.en-insight-row,.en-charts-row,.an-salt,.ctrl-top,.ctrl-mid,.adv-top,.adv-mid,.adv-bot-extra,.an-ec-trend,.an-en-flow{grid-template-columns:1fr;height:auto}
+  .an-ec-trend,.an-en-flow{height:100px}
+  .top-bar{flex-direction:column;align-items:flex-start;gap:8px}.tb-left{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-logo-area">
+    <div class="sb-logo">&#9728;</div>
+    <span class="sb-logo-text">逐光巡墒<span class="sb-ver">v3</span></span>
+  </div>
+  <nav class="sb-nav">
+    <button class="nav-item active" data-panel="dash"><span class="ni-dot"></span>旱情预警</button>
+    <button class="nav-item" data-panel="soil"><span class="ni-dot"></span>墒情分析</button>
+    <button class="nav-item" data-panel="energy"><span class="ni-dot"></span>能源分析</button>
+    <button class="nav-item" data-panel="advice"><span class="ni-dot"></span>决策建议</button>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-avatar">&#128100;</div>
+    <span class="sb-username">管理员</span>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top-bar anim">
+    <div class="tb-left">
+      <span class="tb-title">&#127795; 逐光巡墒——智慧墒情巡检与旱情预警系统</span>
+      <span class="tb-subtitle">离网联锁 · 三层决策 · 风光互补 · 盐碱地洗盐</span>
+      <span class="tb-ind"><span class="clock" id="topTime">--:--:--</span></span>
+      <span class="tb-ind" id="connStatus" title="云端连接状态"><span id="connDot">&#128308;</span><span id="connLabel">离线</span></span>
+      <span class="tb-ind"><span style="color:var(--primary);font-size:8px">&#9729;</span> WiFi</span>
+      <span class="tb-ind"><span class="batt"><span class="batt-f" id="battF" style="width:78%"></span></span><span id="battP">78%</span></span>
+    </div>
+    <div class="tb-right"><span class="status-pill" id="mb">&#129302; 自动</span></div>
+  </div>
+  <div class="dec-banner anim" id="decBanner">
+    <div class="dec-left">
+      <span class="dec-icon" id="decIcon">&#9989;</span>
+      <span class="dec-text allow" id="decText">决策：建议灌溉</span>
+      <span class="dec-detail" id="decDetail">当前墒情低于田持60%，满足灌溉条件 | 电压正常</span>
+    </div>
+    <div class="dec-tags">
+      <span class="dec-tag ready" id="tagDemand">&#9989; 需求层</span>
+      <span class="dec-tag ok" id="tagCondition">&#9989; 条件层</span>
+      <span class="dec-tag ok" id="tagSafety">&#9989; 安全层</span>
+    </div>
+  </div>
+  <div class="flow-bar anim">
+    <div class="fs active"><span class="fs-n">1</span>传感采集</div>
+    <div class="fs active" id="fsDemand"><span class="fs-n">2</span>需求判断</div>
+    <div class="fs active" id="fsCondition"><span class="fs-n">3</span>条件校验</div>
+    <div class="fs active" id="fsSafety"><span class="fs-n">4</span>安全确认</div>
+    <div class="fs active" id="fsExec"><span class="fs-n">5</span>建议灌溉</div>
+  </div>
+
+  <!-- ===== PANEL 1: 决策总览 ===== -->
+  <div class="panel show" id="panel-dash">
+    <div class="dash-grid">
+      <div class="dr1">
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9748; 土壤水分</span><span class="badge badge-warn" id="humBdg">偏干</span></div>
+          <div class="card-body">
+            <div class="sen-row">
+              <div class="sen-gauge"><svg class="sen-svg" viewBox="0 0 48 48"><defs><linearGradient id="hG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#009a4e"/><stop offset="1" stop-color="#006e36"/></linearGradient></defs><circle class="sg-bg" cx="24" cy="24" r="19"/><circle class="sg-fg" id="humArc" cx="24" cy="24" r="19" stroke-dasharray="0 119.38" stroke="url(#hG)"/></svg><div class="sg-ctr"><span class="v" id="humV">31</span><span class="u">%</span></div></div>
+              <div class="sen-info">
+                <div class="si-row"><span>旱情</span><span class="si-v">&lt; 35%</span></div>
+                <div class="si-row"><span>达标</span><span class="si-v">&ge; 70%</span></div>
+                <div class="si-row"><span>状态</span><span class="si-v"><span class="si-status si-warn" id="humSt"><span class="dot">●</span>轻度干旱</span></span></div>
+              </div>
+            </div>
+            <div class="sen-spark"><canvas id="spHum"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#127777; 土壤温度</span><span class="badge badge-ok" id="tempBdg">正常</span></div>
+          <div class="card-body">
+            <div class="sen-row">
+              <div class="sen-gauge"><svg class="sen-svg" viewBox="0 0 48 48"><defs><linearGradient id="tG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f57c00"/><stop offset="1" stop-color="#ef6c00"/></linearGradient></defs><circle class="sg-bg" cx="24" cy="24" r="19"/><circle class="sg-fg" id="tempArc" cx="24" cy="24" r="19" stroke-dasharray="0 119.38" stroke="url(#tG)"/></svg><div class="sg-ctr"><span class="v" id="tempV">28.5</span><span class="u">°C</span></div></div>
+              <div class="sen-info">
+                <div class="si-row"><span>适温</span><span class="si-v">20~30°C</span></div>
+                <div class="si-row"><span>补偿</span><span class="si-v">α≈2%/°C</span></div>
+                <div class="si-row"><span>状态</span><span class="si-v"><span class="si-status si-ok" id="tempSt"><span class="dot">●</span>适宜</span></span></div>
+              </div>
+            </div>
+            <div class="sen-spark"><canvas id="spTemp"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9889; 电导率 EC</span><span class="badge badge-ok" id="ecBdg">正常</span></div>
+          <div class="card-body">
+            <div class="sen-row">
+              <div class="sen-gauge"><svg class="sen-svg" viewBox="0 0 48 48"><defs><linearGradient id="eG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b1fa2"/><stop offset="1" stop-color="#4a148c"/></linearGradient></defs><circle class="sg-bg" cx="24" cy="24" r="19"/><circle class="sg-fg" id="ecArc" cx="24" cy="24" r="19" stroke-dasharray="0 119.38" stroke="url(#eG)"/></svg><div class="sg-ctr"><span class="v" id="ecV">1.8</span><span class="u">dS/m</span></div></div>
+              <div class="sen-info">
+                <div class="si-row"><span>适宜</span><span class="si-v">&lt; 2.0</span></div>
+                <div class="si-row"><span>超标</span><span class="si-v si-danger">&gt; 4.0</span></div>
+                <div class="si-row"><span>状态</span><span class="si-v"><span class="si-status si-ok" id="ecSt"><span class="dot">●</span>正常</span></span></div>
+              </div>
+            </div>
+            <div class="sen-spark"><canvas id="spEc"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9762; 土壤pH</span><span class="badge badge-ok" id="phBdg">中性</span></div>
+          <div class="card-body">
+            <div class="sen-row">
+              <div class="sen-gauge"><svg class="sen-svg" viewBox="0 0 48 48"><defs><linearGradient id="pG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1976d2"/><stop offset="1" stop-color="#0d47a1"/></linearGradient></defs><circle class="sg-bg" cx="24" cy="24" r="19"/><circle class="sg-fg" id="phArc" cx="24" cy="24" r="19" stroke-dasharray="0 119.38" stroke="url(#pG)"/></svg><div class="sg-ctr"><span class="v" id="phV">7.0</span></div></div>
+              <div class="sen-info">
+                <div class="si-row"><span>适宜</span><span class="si-v">6.0~7.5</span></div>
+                <div class="si-row"><span>酸碱</span><span class="si-v">中性</span></div>
+                <div class="si-row"><span>状态</span><span class="si-v"><span class="si-status si-ok" id="phSt"><span class="dot">●</span>正常</span></span></div>
+              </div>
+            </div>
+            <div class="sen-spark"><canvas id="spPh"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="dr2">
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9834; 土壤水分趋势 (近1分钟)</span></div>
+          <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+          <div class="chart-legend">
+            <span><span class="ldot" style="background:#009a4e"></span>实测</span>
+            <span><span class="lbar" style="background:rgba(245,124,0,.5)"></span>35%旱情线</span>
+            <span><span class="lbar" style="background:rgba(0,154,78,.5)"></span>70%适宜线</span>
+          </div>
+        </div>
+        <div class="card env-card">
+          <div class="card-hdr"><span class="lbl">&#9728; 环境与土壤</span></div>
+          <div class="env-card-body">
+            <span class="env-section-label">&#9728; 环境参数</span>
+            <div class="env-grid">
+              <div class="env-item">
+                <span class="env-label">&#9788; 光照</span>
+                <div class="env-bar-wrap"><div id="lightBar" class="env-bar-f" style="width:55%"></div></div>
+                <span class="env-val" id="lightVal">45k lux</span>
+              </div>
+              <div class="env-item">
+                <span class="env-label">&#127777; 温度</span>
+                <div class="env-bar-wrap"><div id="tempBar" class="env-bar-f" style="width:48%"></div></div>
+                <span class="env-val" id="tempVal">28.5°</span>
+              </div>
+              <div class="env-item">
+                <span class="env-label">&#128167; 环湿</span>
+                <div class="env-bar-wrap"><div id="envHumBar" class="env-bar-f" style="width:62%"></div></div>
+                <span class="env-val" id="envHumVal">62%</span>
+              </div>
+            </div>
+            <div class="env-divider"></div>
+            <span class="env-section-label">&#129716; 土壤参数</span>
+            <div class="env-grid">
+              <div class="env-item">
+                <span class="env-label">pH 酸碱</span>
+                <div class="env-bar-wrap"><div id="phBar" class="env-bar-f ph-bar" style="width:50%"></div></div>
+                <span class="env-val ph-val" id="phVal">7.0</span>
+              </div>
+              <div class="env-item">
+                <span class="env-label">盐分</span>
+                <div class="env-bar-wrap"><div id="salBar" class="env-bar-f sal-bar" style="width:30%"></div></div>
+                <span class="env-val sal-val" id="salVal">1.5</span>
+              </div>
+              <div class="env-item">
+                <span class="env-label">电导率</span>
+                <div class="env-bar-wrap"><div id="ecBar" class="env-bar-f ec-bar" style="width:30%"></div></div>
+                <span class="env-val ec-val" id="ecVal">1.8</span>
+              </div>
+            </div>
+            <div class="env-divider"></div>
+            <span class="env-section-label">&#127793; 土壤养分</span>
+            <div class="npk-row">
+              <div class="npk-item">
+                <div class="npk-dot n-dot">N</div>
+                <div class="npk-info"><span class="npk-v" id="nitroVal">65.0</span><span class="npk-u">mg/kg</span></div>
+                <div class="npk-bar"><div id="nitroBar" class="npk-bar-f n" style="width:35%"></div></div>
+              </div>
+              <div class="npk-item">
+                <div class="npk-dot p-dot">P</div>
+                <div class="npk-info"><span class="npk-v" id="phosVal">28.0</span><span class="npk-u">mg/kg</span></div>
+                <div class="npk-bar"><div id="phosBar" class="npk-bar-f p" style="width:25%"></div></div>
+              </div>
+              <div class="npk-item">
+                <div class="npk-dot k-dot">K</div>
+                <div class="npk-info"><span class="npk-v" id="potassVal">85.0</span><span class="npk-u">mg/kg</span></div>
+                <div class="npk-bar"><div id="potassBar" class="npk-bar-f k" style="width:40%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9776; 水位 &amp; 电压双轴</span></div>
+          <div class="dual-chart-area"><canvas id="dualChart"></canvas></div>
+          <div class="dual-minis">
+            <div class="mini-tile"><div class="mt-l">余量</div><div class="mt-v green" id="miniWlv">5.0L</div></div>
+            <div class="mini-tile"><div class="mt-l">电压</div><div class="mt-v white" id="miniBat">12.8V</div></div>
+            <div class="mini-tile"><div class="mt-l">监测</div><div class="mt-v orange" id="miniTime">12m</div></div>
+            <div class="mini-tile"><div class="mt-l">限额</div><div class="mt-v red" id="miniLimit">30m</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="dr3">
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#9830; 三层联锁决策</span><span class="badge badge-ok" id="decBadge">允许</span></div>
+          <div class="card-body" style="padding:3px 6px 6px">
+            <div class="il-grid">
+              <div class="il-sec"><div class="il-sec-t">需求层 — 土壤湿度阈值</div>
+                <div class="il-row" id="ilDemand" style="border-left-color:#ffab40"><div class="il-ico">&#9829;</div><span class="il-name">湿度 <span id="ilHumVal">31%</span></span><span class="il-st warn" id="ilDemandSt">需关注 (&lt;35%)</span></div>
+              </div>
+              <div class="il-sec"><div class="il-sec-t">条件层 — 水位与电压</div>
+                <div class="il-row" id="ilWater"><div class="il-ico">&#9823;</div><span class="il-name">水位 <span id="ilWlvVal">76%</span></span><span class="il-st ok" id="ilWaterSt">正常 (&gt;20%)</span></div>
+                <div class="il-row" id="ilVoltage"><div class="il-ico">&#9889;</div><span class="il-name">电压 <span id="ilBatVal">12.8V</span></span><span class="il-st ok" id="ilVoltageSt">正常 (&gt;11.5V)</span></div>
+              </div>
+              <div class="il-sec"><div class="il-sec-t">安全层 — 超时保护</div>
+                <div class="il-row" id="ilTimeout"><div class="il-ico">&#9201;</div><span class="il-name">运行 <span id="ilRunVal">0m</span></span><span class="il-st ok" id="ilTimeoutSt">未超时 (&lt;30m)</span></div>
+              </div>
+              <div class="il-sec"><div class="il-sec-t">监测状态</div>
+                <div class="il-row" id="ilPumpRow"><div class="il-ico">&#9736;</div><span class="il-name">水泵 <span id="ilPumpStatus">待机</span></span><span class="il-st ok" id="ilModeInfo">自动联锁</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="lbl">&#128167; 旱情概览</span><span class="badge badge-ok" id="irrigOverviewBdg">蓄水充足</span></div>
+          <div class="card-body" style="padding:8px 10px;justify-content:flex-start">
+            <div class="ov-grid">
+              <div class="ov-cell"><div class="ov-cell-l">今日灌水量</div><div class="ov-cell-v green" id="ovIrrig">128.6L</div></div>
+              <div class="ov-cell"><div class="ov-cell-l">监测次数 / 运行</div><div class="ov-cell-v white" id="ovCount">3次 / <span style="color:#ffab40" id="ovRun">2h35m</span></div></div>
+              <div class="ov-cell"><div class="ov-cell-l">EC·10cm / 20cm</div><div class="ov-cell-v"><span style="color:#b388ff" id="ovEC10">2.45</span><span style="color:var(--text-dim);font-size:10px"> / </span><span style="color:#009a4e" id="ovEC20">1.82</span></div></div>
+              <div class="ov-cell"><div class="ov-cell-l">湿润锋 / 阶段</div><div class="ov-cell-v blue" id="ovFront">28cm</div><div style="font-size:7px;color:var(--text-dim);margin-top:1px" id="ovPhase">洗盐推进</div></div>
+            </div>
+            <div class="ov-divider"></div>
+            <div class="ov-footer">
+              <span>灌水定额: <span style="color:#ffab40;font-weight:600;font-family:Consolas,monospace" id="ovQuota">85.7%</span></span>
+              <span>蓄水余量: <span style="color:#009a4e;font-weight:600;font-family:Consolas,monospace" id="ovRemain">5.0L</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 2: 墒情分析 ===== -->
+  <div class="panel" id="panel-soil">
+    <div class="an-top">
+      <div class="card"><div class="card-hdr"><span class="lbl">当前湿度</span></div><div class="metric-card"><div class="val green" id="mCurHum">31%</div><div class="sub" id="mCurHumLabel">偏干</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">最高 / 最低</span></div><div class="metric-card"><div class="val white" id="mHumRange">89% / 28%</div><div class="sub">近1小时</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">平均湿度</span></div><div class="metric-card"><div class="val green" id="mHumAvg">58%</div><div class="sub">近1小时</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">达标率</span></div><div class="metric-card"><div class="val green" id="mHumRate">73%</div><div class="sub">&ge;35% 时间占比</div></div></div>
+    </div>
+    <div class="an-mid">
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9834; 土壤湿度详细曲线（近2小时）</span></div><div class="an-chart-wrap"><canvas id="p2LineChart"></canvas></div><div class="an-legend"><span><span class="lbar" style="background:rgba(255,171,64,.5)"></span>35%启动线</span><span><span class="lbar" style="background:rgba(0,154,78,.5)"></span>70%停止线</span><span><span class="ldot" style="background:#009a4e"></span>实时数据</span></div></div>
+    </div>
+    <div class="an-salt">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#9889; 土壤EC 10cm</span><span class="badge badge-purple" id="ec10Bdg">偏高</span></div>
+        <div class="salt-stat">
+          <span class="salt-v" id="ec10Val">2.45</span>
+          <span class="salt-l">dS/m（目标 &lt; 2.0）</span>
+          <div class="salt-bar-wrap bg-purple"><div class="salt-bar-f purple" id="ec10Bar" style="width:61%"></div></div>
+          <span class="salt-l" style="color:#b388ff" id="ec10Trend">▼ 洗盐进行中</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#9889; 土壤EC 20cm</span><span class="badge badge-ok" id="ec20Bdg">正常</span></div>
+        <div class="salt-stat">
+          <span class="salt-v green" id="ec20Val">1.82</span>
+          <span class="salt-l">dS/m（目标 &lt; 2.0）</span>
+          <div class="salt-bar-wrap bg-green"><div class="salt-bar-f green" id="ec20Bar" style="width:46%"></div></div>
+          <span class="salt-l" style="color:#009a4e" id="ec20Trend">▼ 稳定下降</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128167; 湿润锋推进</span><span class="badge badge-blue" id="frontBdg">洗盐推进</span></div>
+        <div class="salt-stat">
+          <span class="salt-v blue" id="frontSpeed">0.38</span>
+          <span class="salt-l">cm/min（深度 <span id="frontDepth">28</span>cm）</span>
+          <div class="salt-bar-wrap bg-blue"><div class="salt-bar-f blue" id="frontBar" style="width:56%"></div></div>
+          <span class="salt-l" style="color:#448aff" id="frontPhase">阶段: 洗盐推进 65%</span>
+        </div>
+      </div>
+    </div>
+    <div class="an-ec-trend">
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9878; EC 分层对比趋势 (10cm / 20cm)</span><span style="font-size:8px;color:var(--text-dim)">近10分钟</span></div>
+        <div class="chart-wrap"><canvas id="ecCompareChart"></canvas></div>
+        <div class="an-legend"><span><span class="ldot" style="background:#b388ff"></span>EC 10cm</span><span><span class="ldot" style="background:#009a4e"></span>EC 20cm</span><span><span style="display:inline-block;width:8px;height:2px;background:rgba(255,82,82,.4);vertical-align:middle;margin-right:3px"></span>警戒 4.0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 3: 能源分析 ===== -->
+  <div class="panel" id="panel-energy">
+    <div class="an-energy">
+      <div class="card"><div class="card-hdr"><span class="lbl">电池电压</span></div><div class="metric-card"><div class="val green" id="enVolt">12.8V</div><div class="sub" id="enVoltSt">正常</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9728; 光伏发电</span></div><div class="metric-card"><div class="val orange" id="enSolar">18.5W</div><div class="sub">光照 45k lux</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">&#127788; 风力发电</span></div><div class="metric-card"><div class="val blue" id="enWind">3.2W</div><div class="sub">风速 <span id="enWindSpeed">2.8</span> m/s</div></div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">负荷功率</span></div><div class="metric-card"><div class="val white" id="enLoad">12.3W</div><div class="sub" id="enLoadSt">系统运行</div></div></div>
+    </div>
+    <div class="an-en-bot">
+      <div class="card"><div class="card-hdr"><span class="lbl">今日发电</span></div><div class="big-val" id="enDayGen">1.28kWh</div><div class="big-label">光伏</div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">今日用电</span></div><div class="big-val" id="enDayUse">0.46kWh</div><div class="big-label">负荷</div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">最低电压</span></div><div class="big-val warn" id="enMinV">11.9V</div><div class="big-label">近24h</div></div>
+      <div class="card"><div class="card-hdr"><span class="lbl">蓄电池 SOC</span></div><div class="big-val" id="enSOC">78%</div><div class="big-label">估算</div></div>
+    </div>
+    <div class="en-insight-row">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128200; 能源效率评估</span></div>
+        <div class="card-body" style="padding:6px 10px;gap:6px;justify-content:center">
+          <div class="adv-item"><span class="adv-dot green"></span><span class="adv-text" id="enAdvice1">光伏自给率 <strong id="enSelfRate">85%</strong>，风力贡献占比 <strong id="enWindRate">15%</strong>。</span></div>
+          <div class="adv-item"><span class="adv-dot blue"></span><span class="adv-text" id="enAdvice2">当前风光总功率 <strong id="enTotalPower">21.7W</strong>，系统负荷 <strong id="enTotalLoad">12.3W</strong>。</span></div>
+          <div class="adv-item"><span class="adv-dot orange"></span><span class="adv-text" id="enAdvice3">电池剩余容量可支撑 <strong id="enRemainTime">8.5小时</strong> 待机运行。</span></div>
+          <div class="adv-item"><span class="adv-dot green"></span><span class="adv-text" id="enAdvice4">今日能源效率评分 <strong id="enScore">92分</strong>，风光利用率优秀。</span></div>
+          <div class="adv-item"><span class="adv-dot cyan"></span><span class="adv-text" id="enAdvice5">建议：当前风速 <strong id="enSuggestWind">2.8 m/s</strong>，光照 <strong id="enSuggestLight">45k lux</strong>，有盈余可储。</span></div>
+          <div class="adv-item"><span class="adv-dot purple"></span><span class="adv-text" id="enAdvice6">日发电 <strong id="enDayGen2">1.28kWh</strong> / 日用电 <strong id="enDayUse2">0.46kWh</strong>，净盈余 <strong id="enNetSurplus">0.82kWh</strong>。</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#9889; 功率平衡</span></div>
+        <div style="position:relative;height:100%;min-height:80px;padding:4px"><canvas id="powerBalanceGauge" style="width:100%;height:100%;display:block"></canvas></div>
+        <div style="text-align:center;font-size:8px;color:var(--text-dim);padding:2px 0 4px">光伏 <span style="color:#ffab40;font-weight:600" id="enBalanceSolar">18.5</span>W vs 负荷 <span style="color:#009a4e;font-weight:600" id="enBalanceLoad">12.3</span>W</div>
+      </div>
+    </div>
+    <div class="en-charts-row">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#9889; 电池放电曲线</span><span style="font-size:8px;color:var(--text-dim)">近1小时</span></div>
+        <div class="chart-wrap"><canvas id="battDischargeChart"></canvas></div>
+        <div class="an-legend"><span><span class="ldot" style="background:#009a4e"></span>电压</span><span><span style="display:inline-block;width:8px;height:2px;background:rgba(255,82,82,.4);vertical-align:middle;margin:0 3px"></span>欠压 11.5V</span></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#9728; 光伏 vs 负荷对比</span><span style="font-size:8px;color:var(--text-dim)">近5分钟</span></div>
+        <div class="chart-wrap"><canvas id="solarBarChart"></canvas></div>
+        <div class="an-legend"><span><span style="display:inline-block;width:12px;height:4px;background:#ffab40;vertical-align:middle;margin:0 3px;border-radius:2px"></span>光伏</span><span><span style="display:inline-block;width:12px;height:4px;background:#009a4e;vertical-align:middle;margin:0 3px;border-radius:2px"></span>负荷</span></div>
+      </div>
+    </div>
+    <div class="an-en-flow" style="flex-shrink:0">
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9889; 能源收支时序</span><span style="font-size:8px;color:var(--text-dim)">光伏 / 负荷</span></div>
+        <div class="chart-wrap"><canvas id="energyFlowChart"></canvas></div>
+        <div class="an-legend"><span><span class="ldot" style="background:#ffab40"></span>光伏发电</span><span><span class="ldot" style="background:#009a4e"></span>系统负荷</span><span><span style="display:inline-block;width:8px;height:2px;background:rgba(0,154,78,.3);vertical-align:middle;margin-right:3px"></span>净盈余</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 4: 控制与报警 ===== -->
+  <div class="panel" id="panel-ctrl">
+    <div class="ctrl-top">
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9881; 旱情阈值设置</span></div>
+        <div class="slid-body">
+          <div class="slid-row">
+            <label class="slid-label-warn">启动</label>
+            <input type="range" min="10" max="60" value="35" id="thStartSlider" oninput="updateThresholds()">
+            <span class="slid-v warn" id="thStartVal">35%</span>
+          </div>
+          <div class="slid-row">
+            <label class="slid-label-ok">停止</label>
+            <input type="range" min="40" max="95" value="70" id="thStopSlider" oninput="updateThresholds()">
+            <span class="slid-v" id="thStopVal">70%</span>
+          </div>
+          <div class="slid-row">
+            <label class="slid-label-danger">超时</label>
+            <input type="range" min="10" max="60" value="30" id="thTimeoutSlider" oninput="updateThresholds()">
+            <span class="slid-v danger" id="thTimeoutVal">30min</span>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hdr"><span class="lbl">&#128737; 安全参数</span></div>
+        <div class="safety-body">
+          <div class="safety-row"><span class="safety-label danger">欠压</span><div class="safety-bar"><div class="safety-bar-f danger" style="width:23%"></div></div><span class="safety-val danger" id="safetyUV">11.5V</span></div>
+          <div class="safety-row"><span class="safety-label danger">低水位</span><div class="safety-bar"><div class="safety-bar-f danger" style="width:20%"></div></div><span class="safety-val danger" id="safetyLW">20%</span></div>
+          <div class="safety-row"><span class="safety-label warn">EC上限</span><div class="safety-bar"><div class="safety-bar-f warn" style="width:40%"></div></div><span class="safety-val warn" id="safetyEC">4.0 dS/m</span></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hdr"><span class="lbl">&#128202; 今日监测统计</span></div>
+        <div class="card-body card-center" style="gap:4px">
+          <div class="metric-val" id="cIrrig">128.6L</div>
+          <div class="sub" id="cIrrigTimes">累计 3 次</div>
+          <div class="sub" id="cIrrigDuration">运行 2h 35m</div>
+          <div style="margin-top:6px;padding:5px 10px;background:rgba(0,154,78,.05);border:1px solid rgba(0,154,78,.1);border-radius:8px;font-size:9px;color:var(--text-dim)">
+            <span>灌水定额完成: </span><span style="color:var(--warning);font-weight:600;font-family:Consolas,monospace" id="irrigQuota">85.7%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ctrl-mid">
+      <div class="card"><div class="card-hdr"><span class="lbl">&#9654; 水泵控制台</span><span class="badge badge-ok" id="ctrlPumpBadge">运行中</span></div>
+        <div class="card-body" style="padding:8px 12px">
+          <div class="toggle-grp" style="margin:0 auto 10px">
+            <button class="toggle-btn on" id="tglAuto3" onclick="setMode('auto')">&#129302; 自动</button>
+            <button class="toggle-btn" id="tglManual3" onclick="setMode('manual')">&#9995; 手动</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">
+            <button class="pump-btn running" id="pumpBtn3" onclick="togglePump()" style="width:120px;height:58px;font-size:16px;border-radius:29px;gap:8px;min-width:120px">
+              <span class="pi">&#9736;</span><span id="pumpLabel3">运行</span>
+            </button>
+            <div style="display:flex;flex-direction:column;gap:3px;font-size:9px">
+              <div style="display:flex;align-items:center;gap:4px;color:var(--text-dim)"><span style="color:#009a4e;font-size:7px">●</span> 决策<span style="color:var(--text-main);font-weight:600;margin-left:auto" id="cDecLabel">建议灌溉</span></div>
+              <div style="display:flex;align-items:center;gap:4px;color:var(--text-dim)"><span style="color:#ffab40;font-size:7px">●</span> 需求<span style="color:var(--text-main);font-weight:600;margin-left:auto" id="cDemandShort">需关注</span></div>
+              <div style="display:flex;align-items:center;gap:4px;color:var(--text-dim)"><span style="color:#009a4e;font-size:7px">●</span> 条件<span style="color:var(--text-main);font-weight:600;margin-left:auto" id="cCondShort">水位/电压正常</span></div>
+            </div>
+          </div>
+          <div class="pump-meta" id="pumpRunTime3" style="margin-bottom:8px">&#9201; 运行 12m 35s</div>
+          <div style="display:flex;justify-content:center;gap:16px;font-size:8px;color:var(--text-dim);margin-bottom:8px">
+            <span>模式: <span style="color:var(--text-main);font-weight:500" id="cModeLabel">自动联锁</span></span>
+            <span>水泵: <span style="color:var(--text-main);font-weight:500" id="cPumpLabel">运行中</span></span>
+          </div>
+          <div class="irrig-pulse-wrap"><canvas id="irrigPulseChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hdr"><span class="lbl">&#128276; 完整事件日志</span><span style="font-size:8px;color:var(--text-dim)">共 <span id="totalLogs">15</span> 条</span></div>
+        <div class="card-body" style="padding:4px 8px 6px">
+          <div class="filter-bar">
+            <button class="filter-btn active" id="filterAll" onclick="filterAlerts('all')">全部</button>
+            <button class="filter-btn" id="filterWarn" onclick="filterAlerts('warn')">⚠ 警告</button>
+            <button class="filter-btn" id="filterDanger" onclick="filterAlerts('danger')">● 故障</button>
+            <button class="filter-btn" id="filterInfo" onclick="filterAlerts('info')">ℹ 信息</button>
+          </div>
+          <div class="alert-scroll" id="alertListFull" style="margin-top:6px">
+            <div class="al-item warn"><span class="al-tm">14:30</span><span class="al-msg">水箱水位偏低(18%)，接近暂未预警阈值</span></div>
+            <div class="al-item info"><span class="al-tm">14:05</span><span class="al-msg">土壤湿度达标(72%)，自动解除预警</span></div>
+            <div class="al-item warn"><span class="al-tm">13:50</span><span class="al-msg">超时保护触发，本次监测已运行30分钟</span></div>
+            <div class="al-item info"><span class="al-tm">13:20</span><span class="al-msg">土壤湿度低于启动阈值(32%)，自动监测启动</span></div>
+            <div class="al-item info"><span class="al-tm">12:10</span><span class="al-msg">风光互补供电正常，电池处于浮充状态</span></div>
+            <div class="al-item info"><span class="al-tm">11:45</span><span class="al-msg">远程数据上报成功 (lux=45000)</span></div>
+            <div class="al-item warn"><span class="al-tm">10:20</span><span class="al-msg">电池电压偏低(11.6V)，接近欠压阈值</span></div>
+            <div class="al-item danger"><span class="al-tm">09:45</span><span class="al-msg">水泵启动失败，检查电源连接</span></div>
+            <div class="al-item info"><span class="al-tm">08:30</span><span class="al-msg">系统上电自检完成，所有传感器正常</span></div>
+            <div class="al-item info"><span class="al-tm">08:00</span><span class="al-msg">每日定时巡检启动</span></div>
+            <div class="al-item warn"><span class="al-tm">07:45</span><span class="al-msg">EC 10cm 浓度偏高(2.85 dS/m)，洗盐未达标</span></div>
+            <div class="al-item info"><span class="al-tm">07:30</span><span class="al-msg">灌水定额设定150m³/hm²，今日目标已更新</span></div>
+            <div class="al-item info"><span class="al-tm">06:15</span><span class="al-msg">湿润锋深度突破30cm，洗盐推进阶段</span></div>
+            <div class="al-item danger"><span class="al-tm">04:50</span><span class="al-msg">夜间光伏停止，切换蓄电池供电</span></div>
+            <div class="al-item info"><span class="al-tm">00:00</span><span class="al-msg">日统计重置，昨日监测记录: 256.8L</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 5: 决策建议 ===== -->
+  <div class="panel advice-panel" id="panel-advice">
+    <div class="adv-top" style="display:none">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128300; 智能决策引擎</span><span class="badge badge-ok" id="advDecision">建议关注</span></div>
+        <div class="card-body card-center" style="padding:8px">
+          <div class="adv-stage">
+            <div class="adv-stage-label">当前洗盐工艺阶段</div>
+            <div class="adv-stage-name" id="advStageName">主洗盐</div>
+            <div class="adv-stage-desc" id="advStageDesc">LEACHING · EC持续下降 · 湿润锋推进中</div>
+          </div>
+          <div style="width:100%;margin-top:8px;padding:8px 10px;background:rgba(0,154,78,.05);border:1px solid rgba(0,154,78,.08);border-radius:8px">
+            <div class="adv-item">
+              <span class="adv-dot green"></span>
+              <span class="adv-text" id="advPrimary">当前盐碱地洗盐处于<strong>主洗盐阶段</strong>，EC 10cm深度为2.45 dS/m（目标&lt;2.0），建议<strong>继续洗盐</strong>，维持当前灌水量。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128221; 参数建议与工程判据</span></div>
+        <div class="card-body" style="padding:6px 10px">
+          <div class="adv-item"><span class="adv-dot orange"></span><span class="adv-text" id="advParam1">灌水定额建议：<strong>150 m³/hm²</strong>（根据当前EC与目标EC差值推算）</span></div>
+          <div class="adv-item"><span class="adv-dot blue"></span><span class="adv-text" id="advParam2">湿润锋推进速度：<strong id="advSpeed">0.38 cm/min</strong>，预计达标还需约<span id="advRemain">35</span>分钟。</span></div>
+          <div class="adv-item"><span class="adv-dot purple"></span><span class="adv-text" id="advParam3">EC 10cm/20cm差异<strong id="advECDiff">0.63 dS/m</strong>，呈现&ldquo;自上而下&rdquo;推进规律，洗盐效果正常。</span></div>
+          <div class="adv-item"><span class="adv-dot green"></span><span class="adv-text" id="advParam4">自适应滴灌 vs 恒定滴灌预估节水率：<strong id="advSave">32%</strong>（根据B组对照实验数据推算）</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="adv-mid">
+      <div class="adv-param">
+        <div class="ap-l">洗盐阈值（启动）</div>
+        <div class="ap-v purple">4.0</div>
+        <div style="font-size:8px;color:var(--text-dim)">dS/m</div>
+      </div>
+      <div class="adv-param">
+        <div class="ap-l">达标阈值（停止）</div>
+        <div class="ap-v green">1.5</div>
+        <div style="font-size:8px;color:var(--text-dim)">dS/m</div>
+      </div>
+      <div class="adv-param">
+        <div class="ap-l">EC温度补偿系数</div>
+        <div class="ap-v orange">2.0</div>
+        <div style="font-size:8px;color:var(--text-dim)">%/°C (基准25°C)</div>
+      </div>
+      <div class="adv-param">
+        <div class="ap-l">EC 10cm当前值</div>
+        <div class="ap-v purple" id="advEC10">2.45</div>
+        <div style="font-size:8px;color:var(--text-dim)">dS/m (目标&lt;2.0)</div>
+      </div>
+      <div class="adv-param">
+        <div class="ap-l">EC 20cm当前值</div>
+        <div class="ap-v green" id="advEC20">1.82</div>
+        <div style="font-size:8px;color:var(--text-dim)">dS/m (目标&lt;2.0)</div>
+      </div>
+      <div class="adv-param">
+        <div class="ap-l">灌水定额完成率</div>
+        <div class="ap-v orange" id="advQuota">85.7%</div>
+        <div style="font-size:8px;color:var(--text-dim)">当前 / 目标</div>
+      </div>
+    </div>
+    <div class="adv-bot">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128200; 五态洗盐工艺状态流转（ESP32状态机）</span></div>
+        <div class="card-body" style="padding:6px 10px;justify-content:center;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div style="text-align:center;flex:1">
+              <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                background:linear-gradient(135deg,var(--primary),#00a84e);color:#04100b;box-shadow:0 0 10px var(--primary-glow)" id="advS0">✓</div>
+              <div style="font-size:6px;color:var(--text-dim)">INIT 润湿</div>
+            </div>
+            <div style="flex:0.25;height:1.5px;background:rgba(0,154,78,.15)" id="advA0"></div>
+            <div style="text-align:center;flex:1">
+              <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                background:linear-gradient(135deg,var(--primary),#00a84e);color:#04100b;box-shadow:0 0 12px var(--primary-glow)" id="advS1">✓</div>
+              <div style="font-size:6px;color:var(--text-dim)">WET 锋形成</div>
+            </div>
+            <div style="flex:0.3;height:2px;background:var(--primary);box-shadow:0 0 8px var(--primary-glow)" id="advA1"></div>
+            <div style="text-align:center;flex:1">
+            <div style="text-align:center;flex:1">
+              <div style="width:30px;height:30px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+                background:linear-gradient(135deg,var(--primary),var(--cyan));color:#04100b;box-shadow:0 0 16px var(--primary-glow),0 0 28px rgba(24,255,255,.2)" id="advS2">●</div>
+              <div style="font-size:6px;color:var(--primary);font-weight:600">LEACH 主洗盐</div>
+            </div>
+            <div style="flex:0.25;height:1.5px;background:rgba(0,154,78,.06)" id="advA2"></div>
+            <div style="text-align:center;flex:1">
+              <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                background:rgba(0,154,78,.08);color:var(--text-dim);border:1px solid rgba(0,154,78,.12)" id="advS3">3</div>
+              <div style="font-size:6px;color:var(--text-dim)">FLUSH 冲淋</div>
+            </div>
+            <div style="flex:0.25;height:1.5px;background:rgba(0,154,78,.06)" id="advA3"></div>
+            <div style="text-align:center;flex:1">
+              <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                background:rgba(0,154,78,.08);color:var(--text-dim);border:1px solid rgba(0,154,78,.12)" id="advS4">4</div>
+              <div style="font-size:6px;color:var(--text-dim)">COMPLETE 完成</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="adv-bot-extra">
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128202; A/B对照实验：自适应 vs 恒定滴灌</span></div>
+        <div class="card-body" style="padding:4px 10px;flex-direction:row;gap:0">
+          <div class="adv-param" style="flex:1;background:rgba(255,171,64,.05);border-color:rgba(255,171,64,.1)">
+            <div class="ap-l" style="color:var(--warning)">A组 恒定滴灌</div>
+            <div class="ap-v orange" style="font-size:14px">30mL/min</div>
+            <div style="font-size:7px;color:var(--text-dim)">流量×2h</div>
+          </div>
+          <div class="adv-param" style="flex:1;background:rgba(0,154,78,.05)">
+            <div class="ap-l">B组 自适应滴灌</div>
+            <div class="ap-v green" style="font-size:14px">五态切换</div>
+            <div style="font-size:7px;color:var(--text-dim)">阈值4.0/1.5</div>
+          </div>
+          <div class="adv-param" style="flex:1;background:rgba(68,138,255,.05);border-color:rgba(68,138,255,.1)">
+            <div class="ap-l" style="color:var(--blue)">预估节水率</div>
+            <div class="ap-v blue" style="font-size:14px" id="advSaveRate">32%</div>
+            <div style="font-size:7px;color:var(--text-dim)">B vs A</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="lbl">&#128295; 设备规格与率定参数</span></div>
+        <div class="card-body" style="padding:4px 10px;gap:2px;justify-content:center">
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>主控</span><span style="color:var(--text-main)">ESP32 / ADS1115 16bit ADC</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>视觉</span><span style="color:var(--text-main)">ESP32-CAM OV2640 1600×1200</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>KCl率定</span><span style="color:var(--text-main)">0.1/1.413/5/10 mS/cm 四点</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>R²可信度</span><span style="color:var(--primary);font-weight:600">≥0.995</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>温度补偿</span><span style="color:var(--text-main)">DS18B20 α≈2%/°C→25°C</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-sub)"><span>整机BOM</span><span style="color:var(--warning);font-weight:600">≈427元</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="advice-layout">
+    <div class="advice-decision-card" id="advBanner">
+      <div class="advice-decision-main">
+        <div class="advice-decision-icon" id="advDecIcon">✅</div>
+        <div>
+          <div class="advice-decision-title" id="advDecTitle">建议关注</div>
+          <div class="advice-decision-desc" id="advDecDesc">湿度31% &lt; 阈值35% → 需求层触发；电压12.8V、水位76%均正常 → 条件层通过。系统建议监测跟进。</div>
+        </div>
+      </div>
+      <div class="advice-decision-tags" id="advDecTags">
+        <span class="advice-tag green">三层联锁通过</span>
+        <span class="advice-tag cyan">风光互补供能正常</span>
+        <span class="advice-tag green">可监测跟进</span>
+      </div>
+    </div>
+    <div class="advice-lock-card card">
+      <div class="card-hdr"><span class="lbl">&#128274; 三层联锁判别</span><span class="badge badge-ok" id="advLockBadge">全部通过</span></div>
+      <div class="lock-flow">
+        <div class="lock-step pass" id="advLock0"><div class="lock-icon">①</div><div class="lock-title">需求层</div><div class="lock-value" id="advLockVal0">湿度 31%</div><div class="lock-desc" id="advLockDesc0">低于旱情阈值，触发旱情预警</div></div>
+        <div class="lock-line"></div>
+        <div class="lock-step pass" id="advLock1"><div class="lock-icon">②</div><div class="lock-title">条件层</div><div class="lock-value" id="advLockVal1">12.7V / 76%</div><div class="lock-desc" id="advLockDesc1">电压与水位满足执行条件</div></div>
+        <div class="lock-line"></div>
+        <div class="lock-step pass" id="advLock2"><div class="lock-icon">③</div><div class="lock-title">安全层</div><div class="lock-value" id="advLockVal2">未闭锁</div><div class="lock-desc" id="advLockDesc2">处于旱情预警建议窗口</div></div>
+      </div>
+    </div>
+    <div class="advice-action-card card">
+      <div class="card-hdr"><span class="lbl">&#128204; 推荐操作</span><span class="badge badge-ok" id="advActionBadge">高优先级</span></div>
+      <div class="action-main">
+        <div class="action-title" id="advActionTitle">建议监测跟进</div>
+        <div class="action-desc" id="advActionDesc">当前墒情低于田间持水量下限，三层联锁均通过，建议持续监测关注。</div>
+        <div class="action-list" id="advActionList">
+          <div class="action-item">检查传感器连接状态</div>
+          <div class="action-item">确认水源与管路正常</div>
+          <div class="action-item">持续监测并分析墒情趋势湿度回升</div>
+        </div>
+      </div>
+      <div class="action-reasons" id="advReasons" style="display:none"></div>
+    </div>
+    <div class="advice-param-card card">
+      <div class="card-hdr"><span class="lbl">&#128202; 决策依据</span></div>
+      <div class="param-grid">
+        <div class="param-item"><span class="param-label">土壤湿度</span><span class="param-value green" id="advPHum">31%</span></div>
+        <div class="param-item"><span class="param-label">旱情阈值</span><span class="param-value orange" id="advPThresh">35%</span></div>
+        <div class="param-item"><span class="param-label">电池电压</span><span class="param-value green">12.8V</span></div>
+        <div class="param-item"><span class="param-label">低压保护</span><span class="param-value red">11.5V</span></div>
+        <div class="param-item"><span class="param-label">水位</span><span class="param-value green">76%</span></div>
+        <div class="param-item"><span class="param-label">低水位线</span><span class="param-value red">20%</span></div>
+      </div>
+    </div>
+    <div class="advice-energy-card card">
+      <div class="card-hdr"><span class="lbl">&#9728; 风光能源与续航建议</span></div>
+      <div class="energy-advice">
+        <div class="energy-status"><span style="font-size:10px;color:var(--text-dim)">当前供能：风光互补</span><span style="font-size:10px;color:var(--text-dim)">电量 <span style="color:var(--primary);font-weight:700" id="advBattSOC">78%</span></span></div>
+        <div class="energy-bar"><div class="energy-bar-fill" id="advBattBar" style="width:78%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:var(--text-dim)"><span>电压 <span style="color:var(--text-main);font-weight:600" id="advBattV">12.8V</span></span><span>预计续航 <span style="color:var(--primary);font-weight:600" id="advRange">≥3日</span></span></div>
+        <div class="energy-tip" id="advEnergyTip">风光互补正常，电量充足，可持续巡检。</div>
+      </div>
+    </div>
+    <div class="advice-trend-card card">
+      <div class="card-hdr"><span class="lbl">&#128200; 旱情趋势与推荐时机</span></div>
+      <div class="trend-body">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:9px;color:var(--text-dim)"><span>近30分钟趋势: <span style="color:#ff5252;font-weight:600" id="advTrend">下降 ▼</span></span><span>旱情等级: <span style="color:#ffab40;font-weight:600" id="advLevel">中度干旱</span></span></div>
+        <div class="trend-time-line">
+          <div class="trend-node active"><span>当前</span><strong id="advT0">建议监测</strong></div>
+          <div class="trend-arrow"></div>
+          <div class="trend-node recommend"><span>30分钟内</span><strong id="advT1">重点关注</strong></div>
+          <div class="trend-arrow"></div>
+          <div class="trend-node risk"><span>2小时后</span><strong id="advT2">风险升高</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</main>
+</div>
+
+<script>
+(function(){
+"use strict";
+var CFG={
+  accessToken:"gy3gruqzqds9jofl",
+  projectKey:"I4VMX0gcZO",
+  httpApi:"http://sh-5-api.iot-api.com/device/v1/gy3gruqzqds9jofl/attributes",
+  mqttHost:"sh-5-mqtt.iot-api.com",
+  mqttPort:1883,
+  mqttUser:"gy3gruqzqds9jofl",
+  mqttPass:"I4VMX0gcZO"
+};
+var tc={},mqttClient=null,connMode="offline",httpTimer=null,hasCloud=false,lastCloud=0,lastSync="--";
+
+function setConn(st,label){
+  var d=document.getElementById("connDot"),l=document.getElementById("connLabel");
+  connMode=st;
+  if(d)d.innerHTML=st==="mqtt"?"&#128994;":st==="http"?"&#128993;":"&#128308;";
+  var txt=label||(st==="mqtt"?"MQTT":st==="http"?"HTTP":"离线");
+  if(hasCloud&&lastSync!=="--")txt+=" "+lastSync;
+  if(l)l.textContent=txt;
+}
+
+var mqttLoaded=false;
+function connectMQTT(){
+  if(typeof mqtt!=="undefined"){doMQTTConnect();return;}
+  if(mqttLoaded)return;
+  mqttLoaded=true;
+  var s=document.createElement("script");
+  s.src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js";
+  s.onload=function(){doMQTTConnect();};
+  s.onerror=function(){
+    var s2=document.createElement("script");
+    s2.src="https://unpkg.com/mqtt/dist/mqtt.min.js";
+    s2.onload=function(){doMQTTConnect();};
+    s2.onerror=function(){setConn("offline","MQTT库加载失败");startHTTPFallback();};
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
+}
+function doMQTTConnect(){
+  var paths=["/mqtt","/ws","/"];
+  function tryPath(i){
+    if(i>=paths.length){setConn("offline","MQTT不可用");startHTTPFallback();return;}
+    var url="ws://"+CFG.mqttHost+":"+CFG.mqttPort+paths[i];
+    try{
+      var c=mqtt.connect(url,{
+        username:CFG.mqttUser,password:CFG.mqttPass,
+        clientId:"web_"+Math.random().toString(36).substr(2,8),
+        connectTimeout:4000,reconnectPeriod:10000,clean:true
+      });
+      var connected=false;
+      c.on("connect",function(){
+        connected=true;setConn("mqtt","MQTT在线");
+        c.subscribe(["device/+/telemetry","telemetry","attributes","v1/devices/me/telemetry","thing/+/property"],function(){});
+      });
+      c.on("message",function(topic,payload){
+        try{
+          var obj=JSON.parse(payload.toString());
+          if(obj.attributes)obj=obj.attributes;if(obj.data)obj=obj.data;if(obj.params)obj=obj.params;
+          for(var k in obj){if(obj.hasOwnProperty(k))tc[k]=obj[k];}
+          hasCloud=true;lastCloud=Date.now();applyCloudData();
+        }catch(e){}
+      });
+      c.on("error",function(){if(!connected){c.end(true);if(i+1<paths.length)tryPath(i+1);}else setConn("mqtt","MQTT重连中");});
+      c.on("close",function(){connected=false;});
+      c.on("offline",function(){setConn("mqtt","MQTT离线");});
+      mqttClient=c;
+    }catch(e){if(i+1<paths.length)tryPath(i+1);else{setConn("offline","MQTT失败");startHTTPFallback();}}
+  }
+  tryPath(0);
+}
+
+function startHTTPFallback(){
+  if(httpTimer)clearInterval(httpTimer);
+  fetchHTTPonce(function(){setConn("http","HTTP在线");httpTimer=setInterval(fetchHTTPonce,3000);});
+}
+function fetchHTTPonce(cb){
+  var x=new XMLHttpRequest();
+  x.open("GET",CFG.httpApi,true);
+  x.setRequestHeader("Project-Key",CFG.projectKey);
+  x.timeout=5000;
+  x.onreadystatechange=function(){
+    if(x.readyState===4){
+      if(x.status===200){
+        try{var r=JSON.parse(x.responseText);
+          if(r.attributes){tc=r.attributes;hasCloud=true;lastCloud=Date.now();applyCloudData();}
+          if(cb)cb();setConn("http","HTTP在线");
+        }catch(e){setConn("http","解析错误");}
+      }else{setConn("offline","API错误");}
+    }
+  };
+  x.onerror=function(){setConn("offline","网络断开");};
+  x.ontimeout=function(){setConn("offline","超时");};
+  x.send();
+}
+function applyCloudData(){
+  lastSync=new Date().toLocaleTimeString("zh-CN",{hour12:false});
+  var rawT=cv("temperature");
+  if(rawT>100)rawT=rawT/10;
+  temp=(rawT!==null&&rawT>15&&rawT<50)?rawT:genTemp();
+  hum=valid(cv("moisture"),1,100)?cv("moisture"):genHum();
+  light=valid(cv("lux"),100,200000)?cv("lux"):genLight();
+  ph=valid(cv("ph"),3,11)?cv("ph"):genPH();
+  salinity=valid(cv("salinity"),0.01,20)?cv("salinity"):genSal();
+  ec=valid(cv("ec"),0.01,20)?cv("ec"):genEC();
+  nitro=valid(cv("nitrogen"),1,500)?cv("nitrogen"):genNitro();
+  phos=valid(cv("phosphorus"),1,500)?cv("phosphorus"):genPhos();
+  potass=valid(cv("potassium"),1,500)?cv("potassium"):genPotass();
+}
+function cv(n){return tc.hasOwnProperty(n)?tc[n]:null;}
+function valid(v,lo,hi){return v!==null&&v>lo&&v<hi;}
+
+var genSeed=0;
+function genNext(lo,hi,rate){
+  genSeed+=(Math.sin(genSeed*0.07)+Math.cos(genSeed*0.13))*rate;
+  genSeed+=0.17;
+  var mid=(lo+hi)/2,amp=(hi-lo)/2;
+  return Math.round((mid+Math.sin(genSeed)*amp+(Math.random()-0.5)*amp*0.3)*10)/10;
+}
+function genTemp(){
+  var h=new Date().getHours()+new Date().getMinutes()/60;
+  return Math.round((24+Math.sin((h-9)/24*Math.PI*2)*7+(Math.random()-0.5)*2)*10)/10;
+}
+function genHum(){return genNext(30,48,0.04);}
+function genLight(){
+  var h=new Date().getHours();
+  return Math.round(Math.max(0,(h>=6&&h<=19)?(8000+Math.sin((h-6)/13*Math.PI)*45000+(Math.random()-0.5)*3000):(Math.random()*200)));
+}
+function genPH(){return genNext(7.2,9.0,0.02);}
+function genSal(){return genNext(1.2,3.8,0.04);}
+function genEC(){return genNext(0.8,2.8,0.03);}
+function genNitro(){return genNext(25,95,0.06);}
+function genPhos(){return genNext(15,65,0.05);}
+function genPotass(){return genNext(30,120,0.05);}
+
+var TS=35,TE=70,TW=20,TV=11.5,TT=30,TO=TT*60;
+window.updateThresholds=function(){
+  TS=parseInt(document.getElementById("thStartSlider").value);
+  TE=parseInt(document.getElementById("thStopSlider").value);
+  TT=parseInt(document.getElementById("thTimeoutSlider").value);
+  TO=TT*60;
+  document.getElementById("thStartVal").textContent=TS+"%";
+  document.getElementById("thStopVal").textContent=TE+"%";
+  document.getElementById("thTimeoutVal").textContent=TT+"min";
+};
+
+var N=30,labels=[];
+for(var i=0;i<N;i++)labels.push((i*2)+"s");
+var hd=[],wd=[],bd=[];
+for(var i=0;i<N;i++){hd.push(35+i*0.3+Math.random()*15);wd.push(2+Math.random()*4);bd.push(13.2-i*0.02-Math.random()*0.4);}
+var hum=31,bat=12.8,light=45000,temp=28.5,wind=2.8,windHist=[];
+var ph=7.0,salinity=1.5,ec=1.8,nitro=65,phos=28,potass=85;
+var ec10=2.45,ec20=1.82,frontSpeed=0.38,frontDepth=28,frontPhase=2;
+var hh=[],tempHist=[],ecHist=[],phHist=[];
+for(var i=0;i<60;i++){hh.push(45+Math.random()*30);tempHist.push(26+Math.random()*4);ecHist.push(1.5+Math.random()*1);phHist.push(6.8+Math.random()*0.6);}
+var pHist=[];
+for(var i=0;i<120;i++)pHist.push(45+Math.random()*30);
+var ec10Hist=[],ec20Hist=[],solarHist=[],loadHist=[],pulseHist=[];
+for(var i=0;i<20;i++){ec10Hist.push(2.3+Math.random()*0.4);ec20Hist.push(1.7+Math.random()*0.3);}
+for(var i=0;i<20;i++){solarHist.push(15+Math.random()*8);loadHist.push(10+Math.random()*4);}
+for(var i=0;i<12;i++)pulseHist.push(0);
+
+var mode="auto",pump=true,runSec=0,bp=78,t=0;
+window.setMode=function(m){
+  mode=m;
+  document.querySelectorAll(".toggle-btn").forEach(function(b){b.classList.remove("on");});
+  var ids=m==="auto"?["tglAuto3"]:["tglManual3"];
+  ids.forEach(function(id){var e=document.getElementById(id);if(e)e.classList.add("on");});
+  var mb=document.getElementById("mb");if(mb)mb.innerHTML=m==="auto"?"&#129302; 自动":"&#9995; 手动";
+  var pi=document.getElementById("ilModeInfo");if(pi){pi.textContent=m==="auto"?"自动联锁":"手动控制";pi.className="il-st "+(m==="auto"?"ok":"");}
+  upP();
+};
+window.togglePump=function(){if(mode!=="auto"){pump=!pump;if(pump)runSec=0;upP();}};
+
+function setBadge(el,cls){if(el)el.className="badge "+cls;}
+
+function upP(){
+  var b3=document.getElementById("pumpBtn3"),l3=document.getElementById("pumpLabel3"),
+      cb=document.getElementById("ctrlPumpBadge");
+  var ps=document.getElementById("ilPumpStatus");
+  var w=true,v=bat>TV,to=runSec>TO;
+  function setBtn(btn,label,cl,text){
+    if(btn){btn.className="pump-btn "+cl;if(label)label.textContent=text;}
+  }
+  if(mode==="auto"){
+    if(pump){
+      if(hum>TE){pump=false;runSec=0;setBtn(b3,l3,"stopped","达标停机");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 已达标('+TE+'%)';
+        setBadge(cb,"badge-ok");if(cb)cb.textContent="已达标";}
+      else if(!w){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 低水位锁定';
+        setBadge(cb,"badge-warn");if(cb)cb.textContent="低水位锁定";}
+      else if(!v){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 欠压锁定';
+        setBadge(cb,"badge-warn");if(cb)cb.textContent="欠压锁定";}
+      else if(to){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> 超时锁定';
+        setBadge(cb,"badge-danger");if(cb)cb.textContent="超时锁定";}
+      else{setBtn(b3,l3,"running","运行");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 自动监测中';}
+    }else{
+      var start=hum<TS;
+      if(start&&w&&v&&!to){pump=true;runSec=0;setBtn(b3,l3,"running","运行");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 自动监测启动';
+        setBadge(cb,"badge-ok");if(cb)cb.textContent="运行中";}
+      else if(hum>=TS){setBtn(b3,l3,"stopped","待机");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> 湿度≥'+TS+'% 待机';
+        setBadge(cb,"");if(cb)cb.textContent="待机";}
+      else if(!w){setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 低水位禁止';
+        setBadge(cb,"badge-warn");if(cb)cb.textContent="低水位锁定";}
+      else if(!v){setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 欠压禁止';
+        setBadge(cb,"badge-warn");if(cb)cb.textContent="欠压锁定";}
+      else if(to){setBtn(b3,l3,"locked","锁定");
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> 超时禁止';
+        setBadge(cb,"badge-danger");if(cb)cb.textContent="超时锁定";}
+    }
+  }else{
+    if(pump){setBtn(b3,l3,"running","运行");if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 手动运行';setBadge(cb,"badge-ok");if(cb)cb.textContent="手动运行";}
+    else{setBtn(b3,l3,"stopped","停止");if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> 手动停止';setBadge(cb,"");if(cb)cb.textContent="已停止";}
+  }
+}
+
+function upDec(){
+  var n=hum<TS,w=true,v=bat>TV,to=runSec>TO;
+  var startOk=!pump&&n&&w&&v&&!to;
+  var runningOk=pump&&hum<=TE&&w&&v&&!to;
+  var ok=startOk||runningOk;
+  var dI=document.getElementById("decIcon"),dT=document.getElementById("decText"),dD=document.getElementById("decDetail");
+  var dB=document.getElementById("decBanner"),dBa=document.getElementById("decBadge");
+  var tD=document.getElementById("tagDemand"),tC=document.getElementById("tagCondition"),tS=document.getElementById("tagSafety");
+  var fD=document.getElementById("fsDemand"),fC=document.getElementById("fsCondition"),fS=document.getElementById("fsSafety"),fE=document.getElementById("fsExec");
+  if(ok){
+    if(dI)dI.textContent="\u2705";if(dT){dT.textContent="决策：建议灌溉";dT.className="dec-text allow";}
+    if(dD)dD.textContent=(pump?"灌溉进行中(hum≤"+TE+"%)":"当前墒情低于田持60%，满足灌溉条件")+" | 电压正常";
+    if(dB)dB.style.background="linear-gradient(180deg,rgba(22,58,40,.9),rgba(18,42,30,.76))";
+    setBadge(dBa,"badge-ok");if(dBa)dBa.textContent="允许";
+    if(tD)tD.className="dec-tag ready";if(tC)tC.className="dec-tag ok";if(tS)tS.className="dec-tag ok";
+    if(fD)fD.className="fs active";if(fC)fC.className="fs active";if(fS)fS.className="fs active";if(fE)fE.className="fs active";
+  }else{
+    if(dI)dI.textContent="\u274c";if(dT){dT.textContent="决策：暂未预警";dT.className="dec-text deny";}
+    var rs=[];if(!n&&!pump)rs.push("湿度"+hum.toFixed(0)+"% ≥ "+TS+"%");if(pump&&hum>TE)rs.push("已达"+TE+"%停止阈值");if(!w)rs.push("水位不足");if(!v)rs.push("欠压");if(to)rs.push("超时");
+    if(dD)dD.textContent=rs.join(" | ");if(dB)dB.style.background="rgba(255,82,82,.05)";
+    setBadge(dBa,"badge-danger");if(dBa)dBa.textContent="禁止";
+    if(tD)tD.className="dec-tag "+(n||pump?"ready":"warn");if(tC)tC.className="dec-tag "+((w&&v)?"ok":"danger");if(tS)tS.className="dec-tag "+(to?"danger":"ok");
+    if(fD)fD.className="fs "+((n||pump)?"active":"");if(fC)fC.className="fs "+((w&&v)?"active":"");if(fS)fS.className="fs "+(to?"":"active");if(fE)fE.className="fs";
+  }
+  var cl=document.getElementById("cModeLabel"),cp=document.getElementById("cPumpLabel"),cd=document.getElementById("cDecLabel");
+  var cs=document.getElementById("cDemandShort"),cc=document.getElementById("cCondShort");
+  if(cl)cl.textContent=mode==="auto"?"自动联锁":"手动控制";
+  if(cp)cp.textContent=pump?"运行中":"停止";
+  if(cd)cd.textContent=ok?"建议灌溉":"暂未预警";
+  if(cs){cs.textContent=(n||pump)?"需关注":"不满足";cs.style.color=(n||pump)?null:null;}
+  if(cc){cc.textContent=(w&&v)?"水位/电压正常":"条件不足";cc.style.color=(w&&v)?null:null;}
+}
+
+function updateAdvice(){
+  var n=hum<TS,w=true,v=bat>TV,to=runSec>TO;
+  var startOk=!pump&&n&&w&&v&&!to,runningOk=pump&&hum<=TE&&w&&v&&!to,ok=startOk||runningOk;
+  var b=document.getElementById("advBanner"),di=document.getElementById("advDecIcon"),dt=document.getElementById("advDecTitle"),dd=document.getElementById("advDecDesc"),dg=document.getElementById("advDecTags");
+  if(ok){
+    if(b)b.className="advice-decision-card";if(di)di.textContent="\u2705";if(dt)dt.textContent="建议关注";if(dd)dd.textContent="土壤湿度"+hum.toFixed(0)+"%低于旱情阈值"+TS+"%，建议持续监测关注；电池电压"+bat.toFixed(1)+"V正常。";
+    if(dg)dg.innerHTML='<span class="advice-tag green">三层联锁通过</span><span class="advice-tag cyan">风光互补供能正常</span><span class="advice-tag green">可监测跟进</span>';
+    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent="高优先级";ab.className="badge badge-ok";}
+    var at=document.getElementById("advActionTitle");if(at)at.textContent="建议监测跟进";
+    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent="当前墒情低于田持60%，满足灌溉条件，三层联锁均通过，建议启动灌溉。";
+    var al=document.getElementById("advActionList");if(al)al.innerHTML='<div class="action-item">检查传感器连接状态</div><div class="action-item">确认水源与管路正常</div><div class="action-item">持续监测并分析墒情趋势湿度回升</div>';
+    var ar=document.getElementById("advReasons");if(ar)ar.style.display="none";
+  }else{
+    if(b)b.className="advice-decision-card deny";if(di)di.textContent="\u274c";if(dt)dt.textContent="暂不建议关注";
+    var reasons=[];if(pump&&hum<=TE)reasons.push({t:"湿度已达适宜范围",c:"green"});if(!n&&!pump)reasons.push({t:"湿度未达阈值",c:"orange"});if(!w)reasons.push({t:"水位不足",c:"red"});if(!v)reasons.push({t:"欠压闭锁",c:"red"});if(to)reasons.push({t:"安全间歇",c:"red"});
+    if(dd)dd.textContent=pump&&hum<=TE?"当前湿度已达到"+TE+"%停止阈值，灌溉正常完成，系统自动停机待命。":"当前存在"+(reasons.length||1)+"项拦截条件，系统已暂缓灌溉建议。";
+    var tagHtml="";reasons.forEach(function(r){tagHtml+='<span class="advice-tag '+r.c+'">'+r.t+'</span>';});
+    if(dg)dg.innerHTML=tagHtml;
+    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent=pump&&hum<=TE?"已完成":"暂缓";ab.className="badge "+(pump&&hum<=TE?"badge-ok":"badge-warn");}
+    var at=document.getElementById("advActionTitle");if(at)at.textContent=pump&&hum<=TE?"监测正常，待机观察":"暂未预警，持续观察";
+    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent=pump&&hum<=TE?"湿度已达到"+TE+"%停止阈值，本次数据采集完成。系统将继续监测墒情变化。":"系统检测到以下拦截条件，请逐一排查后再监测跟进：";
+    var actions=[];if(pump&&hum<=TE)actions.push("监测湿度变化趋势");if(!n&&!pump)actions.push("继续巡检监测");if(!w)actions.push("检查水源，补充水位");if(!v)actions.push("补电或等待风光恢复");if(to)actions.push("等待安全间歇期结束");
+    var al=document.getElementById("advActionList");if(al){var ah="";actions.forEach(function(a){ah+='<div class="action-item">'+a+'</div>';});al.innerHTML=ah;}
+    var ar=document.getElementById("advReasons");if(ar){ar.style.display="flex";ar.innerHTML=tagHtml;}
+  }
+  var lb=document.getElementById("advLockBadge");if(lb){lb.textContent=ok?"全部通过":"未通过";lb.className="badge "+(ok?"badge-ok":"badge-warn");}
+  function setLock(i,cls,val,desc){
+    var el=document.getElementById("advLock"+i);if(el)el.className="lock-step "+cls;
+    var v=document.getElementById("advLockVal"+i);var d=document.getElementById("advLockDesc"+i);
+    if(i===0){if(v)v.textContent="湿度 "+hum.toFixed(0)+"%";if(d){d.textContent=(n||pump)?"低于旱情阈值"+TS+"%，触发旱情预警":"未低于阈值"+TS+"%，不触发";}}
+    if(i===1){if(v)v.textContent=bat.toFixed(1)+"V";if(d)d.textContent=v?"电压满足执行条件":"电压偏低";}
+    if(i===2){if(v)v.textContent=to?"已闭锁":"未闭锁";if(d)d.textContent=to?"超时保护触发":"处于旱情预警建议窗口";}
+  }
+  setLock(0,(n||pump)?"pass":"warn");setLock(1,(w&&v)?"pass":"danger");setLock(2,to?"danger":"pass");
+  var ph=document.getElementById("advPHum");if(ph)ph.textContent=hum.toFixed(0)+"%";
+  var pt=document.getElementById("advPThresh");if(pt)pt.textContent=TS+"%";
+  var bs=document.getElementById("advBattSOC");if(bs)bs.textContent=Math.round(bp)+"%";
+  var bb=document.getElementById("advBattBar");if(bb)bb.style.width=Math.round(bp)+"%";
+  var bv=document.getElementById("advBattV");if(bv)bv.textContent=bat.toFixed(1)+"V";
+  var br=document.getElementById("advRange");if(br)br.textContent=bp>60?"≥3日":(bp>30?"≥1日":"<12小时");
+  var et=document.getElementById("advEnergyTip");if(et)et.textContent=bp>60?"风光互补正常，电量充足，可持续巡检。":(bp>30?"电量偏低，阴雨时降低刷新频率至5s。":"电量不足，建议立即补电。");
+  var tr=document.getElementById("advTrend");if(tr){var hh2=hh.slice(-10),tAvg=hh2.reduce(function(a,b){return a+b;},0)/hh2.length;tr.textContent=hum<tAvg?"下降 ▼":(hum>tAvg?"上升 ▲":"持平 →");tr.style.color=hum<tAvg?"#ff5252":(hum>tAvg?"#009a4e":"#ffab40");}
+  var lv=document.getElementById("advLevel");if(lv)lv.textContent=hum<20?"严重干旱":(hum<TS?"中度干旱":"轻度偏干");
+}
+
+function rc(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+function drawLine(id,data,refs){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var r=c.parentElement.getBoundingClientRect();
+  var W=(r.width<10?600:r.width)*2,H=(r.height<10?200:r.height)*2;
+  c.width=W;c.height=H;var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  if(data.length<2)return;
+  var mn=10,mx=90,pt=16,pb=16,pl=32,pr=10,cw=W-pl-pr,ch=H-pt-pb,xs=cw/(data.length-1);
+  var z1=pt+ch-(TE-mn)/(mx-mn)*ch,z2=pt+ch-(TS-mn)/(mx-mn)*ch;
+  if(id!=="p2LineChart"){ctx.fillStyle="rgba(0,154,78,.06)";ctx.fillRect(pl,z1,cw,z2-z1);}
+  ctx.strokeStyle="rgba(0,154,78,.12)";ctx.lineWidth=0.5;
+  for(var yv=10;yv<=90;yv+=20){var gy=pt+ch-(yv-mn)/(mx-mn)*ch;ctx.beginPath();ctx.moveTo(pl,gy);ctx.lineTo(W-pr,gy);ctx.stroke();}
+  ctx.fillStyle="#5a7a65";ctx.font="9px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=10;yv<=90;yv+=20){ctx.fillText(yv,pl-6,pt+ch-(yv-mn)/(mx-mn)*ch);}
+  ctx.textAlign="center";ctx.textBaseline="top";
+  var ss=Math.max(1,Math.floor(data.length/(id==="p2LineChart"?10:6)));
+  for(var i=0;i<data.length;i+=ss){
+    var lbl=id==="p2LineChart"?((120-i-1)*-3+"m"):labels[i];
+    ctx.fillText(lbl,pl+i*xs,H-pb+2);
+  }
+  if(refs)refs.forEach(function(rf){
+    var ry=pt+ch-(rf.v-mn)/(mx-mn)*ch;
+    ctx.strokeStyle=rf.c;ctx.lineWidth=1.5;ctx.setLineDash(rf.d);ctx.beginPath();ctx.moveTo(pl,ry);ctx.lineTo(W-pr,ry);ctx.stroke();ctx.setLineDash([]);
+  });
+  var g=ctx.createLinearGradient(0,pt,0,pt+ch);g.addColorStop(0,"rgba(0,154,78,.10)");g.addColorStop(1,"rgba(0,154,78,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(pl,pt+ch);
+  for(var i=0;i<data.length;i++){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;ctx.lineTo(x,y);}
+  ctx.lineTo(pl+(data.length-1)*xs,pt+ch);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="#009a4e";ctx.lineWidth=2.5;ctx.shadowColor="rgba(0,154,78,.5)";ctx.shadowBlur=8;ctx.beginPath();
+  for(var i=0;i<data.length;i++){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.shadowBlur=0;
+  var ev=Math.max(1,Math.floor(data.length/(id==="p2LineChart"?12:8)));
+  ctx.fillStyle="#009a4e";
+  for(var i=0;i<data.length;i+=ev){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill();}
+}
+
+function drawDonut(id,pct,color,label){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var r=c.parentElement.getBoundingClientRect();
+  c.width=(r.width<10?300:r.width)*2;c.height=(r.height<10?300:r.height)*2;
+  var W=c.width,H=c.height,ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  var cx=W/2,cy=H*0.42,sz=Math.min(W,H),rd=sz/2*0.62,tw=sz*0.12;
+  ctx.beginPath();ctx.arc(cx,cy,rd,0,Math.PI*2);ctx.strokeStyle="rgba(255,255,255,.04)";ctx.lineWidth=tw;ctx.stroke();
+  var sa=-Math.PI/2,ea=sa+pct/100*Math.PI*2;
+  var grd=ctx.createLinearGradient(0,cy-rd,0,cy+rd);grd.addColorStop(0,color);grd.addColorStop(.6,color);grd.addColorStop(1,color+"88");
+  ctx.beginPath();ctx.arc(cx,cy,rd,sa,ea);ctx.strokeStyle=grd;ctx.lineWidth=tw;ctx.lineCap="round";
+  ctx.shadowColor=color;ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle="#e4ffe8";ctx.font="bold "+Math.round(sz*0.3)+"px 'DIN Alternate','Consolas',monospace";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(Math.round(pct)+"%",cx,cy+1);
+  if(label){ctx.fillStyle="#5a7a65";ctx.font=Math.round(sz*0.13)+"px sans-serif";ctx.fillText(label,cx,cy+sz*0.2);}
+}
+
+function drawDual(id,d1,d2){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var r=c.parentElement.getBoundingClientRect();
+  c.width=(r.width<10?600:r.width)*2;c.height=(r.height<10?200:r.height)*2;
+  var W=c.width,H=c.height,ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  if(d1.length<2)return;
+  var wmax=Math.ceil(Math.max.apply(null,d1)||6),wMn=0,wMx=Math.max(6,wmax+(wmax<4?2:0)),m2=10,M2=15,pt=14,pb=18,pl=42,pr=42,cw=W-pl-pr,ch=H-pt-pb;
+  ctx.strokeStyle="rgba(0,154,78,.1)";ctx.lineWidth=0.5;
+  for(var yv=0;yv<=wMx;yv+=Math.max(1,Math.ceil(wMx/4))){var gy=pt+ch-(yv-wMn)/(wMx-wMn)*ch;ctx.beginPath();ctx.moveTo(pl,gy);ctx.lineTo(W-pr,gy);ctx.stroke();}
+  ctx.fillStyle="#5a7a65";ctx.font="8px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=0;yv<=wMx;yv+=Math.max(1,Math.ceil(wMx/4)))ctx.fillText(yv,pl-6,pt+ch-(yv-wMn)/(wMx-wMn)*ch);
+  ctx.fillStyle="#ffab40";ctx.font="8px sans-serif";ctx.textAlign="left";
+  for(var yv=10;yv<=15;yv+=2){ctx.fillText(yv.toFixed(1),W-pr+6,pt+ch-(yv-m2)/(M2-m2)*ch);}
+  var ry=pt+ch-(TV-m2)/(M2-m2)*ch;
+  ctx.strokeStyle="rgba(255,82,82,.25)";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pl,ry);ctx.lineTo(W-pr,ry);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle="#ff5252";ctx.font="7px sans-serif";ctx.textAlign="left";ctx.fillText((TV).toFixed(1),W-pr+2,ry-5);
+  var xs=cw/(d1.length-1);
+  ctx.strokeStyle="#009a4e";ctx.lineWidth=2.5;ctx.shadowColor="rgba(0,154,78,.4)";ctx.shadowBlur=6;ctx.beginPath();
+  for(var i=0;i<d1.length;i++){var x=pl+i*xs,y=pt+ch-(d1[i]-wMn)/(wMx-wMn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  ctx.strokeStyle="#ffab40";ctx.shadowColor="rgba(255,171,64,.4)";ctx.beginPath();
+  for(var i=0;i<d2.length;i++){var x=pl+i*xs,y=pt+ch-(d2[i]-m2)/(M2-m2)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  ctx.shadowBlur=0;
+}
+
+function drawSpark(id,data,color){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<10||H<10)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),rg=mx-mn||1;
+  ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.globalAlpha=.5;
+  ctx.beginPath();
+  for(var i=0;i<data.length;i++){var x=i/(data.length-1)*W,y=H-(data[i]-mn)/rg*H;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.globalAlpha=1;
+}
+
+function drawECCompare(id,d10,d20){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var r=c.parentElement.getBoundingClientRect();
+  c.width=(r.width<10?600:r.width)*2;c.height=(r.height<10?200:r.height)*2;
+  var W=c.width,H=c.height,ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  if(d10.length<2)return;
+  var mx=4.5,mn=0.3,pt=12,pb=18,pl=30,pr=10,cw=W-pl-pr,ch=H-pt-pb;
+  ctx.strokeStyle="rgba(0,154,78,.08)";ctx.lineWidth=0.5;
+  for(var yv=1;yv<=4;yv+=1){var gy=pt+ch-(yv-mn)/(mx-mn)*ch;ctx.beginPath();ctx.moveTo(pl,gy);ctx.lineTo(W-pr,gy);ctx.stroke();}
+  ctx.fillStyle="#5a7a65";ctx.font="8px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=1;yv<=4;yv+=1)ctx.fillText(yv.toFixed(1),pl-4,pt+ch-(yv-mn)/(mx-mn)*ch);
+  var xs=cw/(d10.length-1);
+  ctx.textAlign="center";ctx.textBaseline="top";
+  for(var i=0;i<d10.length;i+=4)ctx.fillText(((19-i)*-0.5).toFixed(0)+"m",pl+i*xs,H-pb+2);
+  var ry=pt+ch-(4.0-mn)/(mx-mn)*ch;
+  ctx.strokeStyle="rgba(255,82,82,.2)";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pl,ry);ctx.lineTo(W-pr,ry);ctx.stroke();ctx.setLineDash([]);
+  function drawSeries(data,color,shadow){
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.shadowColor=shadow;ctx.shadowBlur=6;ctx.beginPath();
+    for(var i=0;i<data.length;i++){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.stroke();ctx.shadowBlur=0;
+  }
+  drawSeries(d10,"#b388ff","rgba(179,136,255,.4)");
+  drawSeries(d20,"#009a4e","rgba(0,154,78,.4)");
+}
+
+function drawEnergyFlow(id,sData,lData){
+  var c=document.getElementById(id);if(!c)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<20||H<20)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  if(sData.length<2)return;
+  var mx=28,mn=0,pt=12,pb=20,pl=32,pr=10,cw=W-pl-pr,ch=H-pt-pb;
+  ctx.strokeStyle="rgba(255,255,255,.06)";ctx.lineWidth=0.5;
+  for(var yv=0;yv<=25;yv+=10){var gy=pt+ch-(yv-mn)/(mx-mn)*ch;ctx.beginPath();ctx.moveTo(pl,gy);ctx.lineTo(W-pr,gy);ctx.stroke();}
+  ctx.fillStyle="#5a7a65";ctx.font="8px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=0;yv<=25;yv+=10)ctx.fillText(yv+"W",pl-5,pt+ch-(yv-mn)/(mx-mn)*ch);
+  var xs=cw/(sData.length-1);
+  ctx.textAlign="center";ctx.textBaseline="top";
+  for(var i=0;i<sData.length;i+=4)ctx.fillText(((19-i)*-0.5).toFixed(0)+"m",pl+i*xs,H-pb+2);
+  var g=ctx.createLinearGradient(0,pt,0,pt+ch);g.addColorStop(0,"rgba(255,171,64,.22)");g.addColorStop(1,"rgba(255,171,64,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(pl,pt+ch);
+  for(var i=0;i<sData.length;i++){var x=pl+i*xs,y=pt+ch-(sData[i]-mn)/(mx-mn)*ch;ctx.lineTo(x,y);}
+  ctx.lineTo(pl+(sData.length-1)*xs,pt+ch);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="#ffab40";ctx.lineWidth=2.5;ctx.shadowColor="rgba(255,171,64,.45)";ctx.shadowBlur=6;ctx.beginPath();
+  for(var i=0;i<sData.length;i++){var x=pl+i*xs,y=pt+ch-(sData[i]-mn)/(mx-mn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.shadowBlur=0;
+  ctx.strokeStyle="#009a4e";ctx.lineWidth=2.5;ctx.shadowColor="rgba(0,154,78,.4)";ctx.shadowBlur=6;ctx.beginPath();
+  for(var i=0;i<lData.length;i++){var x=pl+i*xs,y=pt+ch-(lData[i]-mn)/(mx-mn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.shadowBlur=0;
+}
+
+function drawBattDischarge(id,data){
+  var c=document.getElementById(id);if(!c)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<20||H<20)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  if(data.length<2)return;
+  var mn=10.5,mx=14.5,pt=10,pb=16,pl=32,pr=10,cw=W-pl-pr,ch=H-pt-pb;
+  ctx.strokeStyle="rgba(255,255,255,.06)";ctx.lineWidth=0.5;
+  for(var yv=11;yv<=14;yv+=1){var gy=pt+ch-(yv-mn)/(mx-mn)*ch;ctx.beginPath();ctx.moveTo(pl,gy);ctx.lineTo(W-pr,gy);ctx.stroke();}
+  ctx.fillStyle="#5a7a65";ctx.font="7px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=11;yv<=14;yv+=1)ctx.fillText(yv+"V",pl-4,pt+ch-(yv-mn)/(mx-mn)*ch);
+  var ry=pt+ch-(11.5-mn)/(mx-mn)*ch;
+  ctx.strokeStyle="rgba(255,82,82,.3)";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(pl,ry);ctx.lineTo(W-pr,ry);ctx.stroke();ctx.setLineDash([]);
+  var xs=cw/(data.length-1);
+  var g=ctx.createLinearGradient(0,pt,0,pt+ch);g.addColorStop(0,"rgba(0,154,78,.12)");g.addColorStop(1,"rgba(0,154,78,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(pl,pt+ch);
+  for(var i=0;i<data.length;i++){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;ctx.lineTo(x,y);}
+  ctx.lineTo(pl+(data.length-1)*xs,pt+ch);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="#009a4e";ctx.lineWidth=2;ctx.shadowColor="rgba(0,154,78,.45)";ctx.shadowBlur=5;ctx.beginPath();
+  for(var i=0;i<data.length;i++){var x=pl+i*xs,y=pt+ch-(data[i]-mn)/(mx-mn)*ch;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();ctx.shadowBlur=0;
+}
+
+function drawPowerGauge(id,s,l){
+  var c=document.getElementById(id);if(!c)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<20||H<20)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  var cx=W/2,cy=H*0.72,r1=Math.min(W,H)*0.46,r2=r1*0.55,total=s+l||1,ratio=Math.min(1,Math.max(0,s/total));
+  // 外圈装饰环
+  ctx.beginPath();ctx.arc(cx,cy,r1+4,-Math.PI*0.95,Math.PI*0.05);ctx.strokeStyle="rgba(255,255,255,.04)";ctx.lineWidth=1;ctx.stroke();
+  // 底部弧（暗衬）
+  ctx.beginPath();ctx.arc(cx,cy,r1,-Math.PI*0.9,Math.PI*0.1);ctx.strokeStyle="rgba(255,255,255,.08)";ctx.lineWidth=r1-r2;ctx.lineCap="butt";ctx.stroke();
+  // 主弧渐变
+  var sa=-Math.PI*0.9,ea=sa+ratio*Math.PI*1.0;
+  var g=ctx.createLinearGradient(cx-r1,cy-r1*0.3,cx+r1,cy-r1*0.3);
+  g.addColorStop(0,"#ff5252");g.addColorStop(0.25,"#ffab40");g.addColorStop(0.55,"#ffd740");g.addColorStop(0.8,"#69f0ae");g.addColorStop(1,"#00a84e");
+  ctx.beginPath();ctx.arc(cx,cy,(r1+r2)/2,sa,ea);ctx.strokeStyle=g;ctx.lineWidth=r1-r2-2;ctx.lineCap="butt";
+  ctx.shadowColor="rgba(255,171,64,.5)";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;
+  // 端点圆
+  var epX=cx+r1*Math.cos(sa),epY=cy+r1*Math.sin(sa);
+  ctx.beginPath();ctx.arc(epX,epY,3.5,0,Math.PI*2);ctx.fillStyle="#ff5252";ctx.shadowColor="#ff5252";ctx.shadowBlur=6;ctx.fill();
+  var ep2X=cx+r1*Math.cos(ea),ep2Y=cy+r1*Math.sin(ea);
+  ctx.beginPath();ctx.arc(ep2X,ep2Y,3.5,0,Math.PI*2);ctx.fillStyle="#00a84e";ctx.shadowColor="#00a84e";ctx.shadowBlur=6;ctx.fill();ctx.shadowBlur=0;
+  // 内圆背景光晕
+  var rg=ctx.createRadialGradient(cx,cy,r2*0.9,cx,cy,r2*1.05);
+  rg.addColorStop(0,"rgba(255,255,255,.03)");rg.addColorStop(1,"transparent");
+  ctx.beginPath();ctx.arc(cx,cy,r2,0,Math.PI*2);ctx.fillStyle=rg;ctx.fill();
+  // 百分比数字
+  ctx.fillStyle="#000";ctx.font="bold "+Math.round(r1*0.42)+"px 'DIN Alternate','Consolas',sans-serif";
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(Math.round(ratio*100)+"%",cx,cy-r1*0.52);
+  // 副标题
+  ctx.fillStyle="#5a7a65";ctx.font=Math.round(r1*0.2)+"px sans-serif";ctx.fillText("光伏占比",cx,cy-r1*0.12);
+  // 底部说明文字
+  ctx.fillStyle="#4a6a5a";ctx.font=Math.round(r1*0.15)+"px sans-serif";ctx.fillText(Math.round(s*10)/10+"W / "+(Math.round(l*10)/10)+"W",cx,cy+r1*0.2);
+}
+
+function drawSolarBar(id,sData,lData){
+  var c=document.getElementById(id);if(!c)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<20||H<20)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  var n=Math.min(sData.length,8),pt=10,pb=16,pl=34,pr=8,cw=W-pl-pr,ch=H-pt-pb;
+  ctx.fillStyle="#5a7a65";ctx.font="7px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(var yv=0;yv<=25;yv+=10)ctx.fillText(yv+"W",pl-4,pt+ch-(yv/28)*ch);
+  ctx.textAlign="center";ctx.textBaseline="top";
+  var step=Math.max(1,Math.floor(sData.length/n));
+  var bw=(cw/n)*0.35,gap=(cw/n)*0.3,offset=(cw/n)*0.5-bw;
+  for(var i=0;i<n;i++){
+    var idx=Math.min(sData.length-1,(sData.length-n+i)*step);
+    var sh=(sData[idx]||0)/28*ch,lh=(lData[idx]||0)/28*ch;
+    var x=pl+i*(cw/n)+offset;
+    ctx.fillStyle="#ffab40";rc(ctx,x,pt+ch-sh,bw,sh,3);ctx.fill();
+    ctx.fillStyle="#009a4e";rc(ctx,x+bw+gap,pt+ch-lh,bw,lh,3);ctx.fill();
+  }
+}
+
+function drawIrrigPulse(id,pData){
+  var c=document.getElementById(id);if(!c||!c.parentElement)return;
+  var W=c.width=(c.offsetWidth||300)*2,H=c.height=(c.offsetHeight||200)*2;if(W<10||H<10)return;
+  var ctx=c.getContext("2d");ctx.clearRect(0,0,W,H);
+  var n=pData.length,bw=W/n-2,pt=4,pb=6,ch=H-pt-pb;
+  for(var i=0;i<n;i++){
+    var x=i*(bw+2)+1,y=ch-(pData[i]||0.15)*ch;
+    ctx.fillStyle=pData[i]>0.5?"#009a4e":"rgba(0,154,78,.12)";
+    rc(ctx,x,pt+y,bw,ch-y,2);
+    ctx.fill();
+    if(pData[i]>0.5){ctx.shadowColor="rgba(0,154,78,.4)";ctx.shadowBlur=4;ctx.fill();ctx.shadowBlur=0;}
+  }
+  ctx.fillStyle="#5a7a65";ctx.font="7px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";
+  ctx.fillText("监测活跃度记录 (最近12周期)",4,1);
+}
+
+function switchPanel(name){
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("show");});
+  var target="panel-"+name;
+  var el=document.getElementById(target);if(el)el.classList.add("show");
+  document.querySelectorAll(".nav-item").forEach(function(n){n.classList.remove("active");});
+  var navItem=document.querySelector('.nav-item[data-panel="'+name+'"]');
+  if(navItem)navItem.classList.add("active");
+  var db=document.getElementById("decBanner"),fb=document.querySelector(".flow-bar");
+  if(name==="energy"){if(db)db.style.display="none";if(fb)fb.style.display="none";}
+  else{if(db)db.style.display="";if(fb)fb.style.display="";}
+  safeRedraw();
+}
+document.querySelectorAll(".nav-item").forEach(function(item){
+  item.addEventListener("click",function(){
+    var pn=this.getAttribute("data-panel");
+    if(pn)switchPanel(pn);
+  });
+});
+
+
+window.filterAlerts=function(type){
+  document.querySelectorAll(".filter-btn").forEach(function(b){b.classList.remove("active");});
+  var fb=document.getElementById("filter"+(type.charAt(0).toUpperCase()+type.slice(1)));
+  if(fb)fb.classList.add("active");
+  var items=document.querySelectorAll("#alertListFull .al-item");
+  items.forEach(function(it){
+    if(type==="all"){it.style.display="flex";return;}
+    if(type==="warn"&&it.classList.contains("warn"))it.style.display="flex";
+    else if(type==="danger"&&it.classList.contains("danger"))it.style.display="flex";
+    else if(type==="info"&&it.classList.contains("info"))it.style.display="flex";
+    else it.style.display="none";
+  });
+};
+
+var clockEl=document.getElementById("topTime");
+function upClock(){if(clockEl)clockEl.textContent=new Date().toLocaleTimeString("zh-CN",{hour12:false});}
+upClock();setInterval(upClock,1000);
+
+function safeRedraw(){
+  try{redrawAll();}catch(e){}
+}
+
+(function animLoop(){
+  safeRedraw();
+  requestAnimationFrame(animLoop);
+})();
+function redrawAll(){
+  drawLine("lineChart",hd,[{v:TS,c:"rgba(255,171,64,.45)",d:[5,3]},{v:TE,c:"rgba(0,154,78,.45)",d:[5,3]}]);
+  drawLine("p2LineChart",pHist,[{v:TS,c:"rgba(255,171,64,.45)",d:[5,3]},{v:TE,c:"rgba(0,154,78,.45)",d:[5,3]}]);
+  drawDual("dualChart",wd,bd);
+  drawSpark("spHum",hh,"#009a4e");drawSpark("spTemp",tempHist,"#f57c00");drawSpark("spEc",ecHist,"#7b1fa2");drawSpark("spPh",phHist,"#1976d2");
+  drawECCompare("ecCompareChart",ec10Hist,ec20Hist);
+  drawEnergyFlow("energyFlowChart",solarHist,loadHist);
+  drawBattDischarge("battDischargeChart",bd);
+  drawSolarBar("solarBarChart",solarHist,loadHist);
+  drawPowerGauge("powerBalanceGauge",light/2500,(pump?12.3:2.8));
+  drawIrrigPulse("irrigPulseChart",pulseHist);
+}
+
+  safeRedraw();
+  startHTTPFallback();
+  connectMQTT();
+  setTimeout(function(){var el=document.getElementById("pumpRunTime3");if(el)el.innerHTML="&#9201; "+Math.floor(runSec/60)+"m "+Math.floor(runSec%60)+"s";},500);
+
+setInterval(function(){t++;var mb=document.getElementById("mb");if(mb)mb.textContent=t;
+  if(connMode==="offline"&&!httpTimer){
+    setConn("offline","重连中");startHTTPFallback();connectMQTT();
+  }
+
+  var activeCloud=false;
+  if(!activeCloud){
+    if(pump)hum+=(Math.random()+.5)*0.25;else hum-=(Math.random()+.15)*0.2;
+    hum=Math.max(15,Math.min(90,hum));
+    light+=(Math.random()-0.5)*500;light=Math.max(5000,Math.min(90000,light));
+    temp+=(Math.random()-0.5)*0.2;temp=Math.max(20,Math.min(38,temp));
+    ph+=(Math.random()-0.5)*0.03;ph=Math.max(4,Math.min(11,ph));
+    salinity+=(Math.random()-0.5)*0.015;salinity=Math.max(0,Math.min(5,salinity));
+    ec+=(Math.random()-0.5)*0.04;ec=Math.max(0,Math.min(5,ec));
+    nitro+=(Math.random()-0.5)*0.15;nitro=Math.max(0,Math.min(200,nitro));
+    phos+=(Math.random()-0.5)*0.15;phos=Math.max(0,Math.min(200,phos));
+    potass+=(Math.random()-0.5)*0.15;potass=Math.max(0,Math.min(200,potass));
+  }
+  bat-=(Math.random()-0.42)*0.04;bat=Math.max(10.5,Math.min(14.5,bat));
+  wind+=(Math.random()-0.5)*0.3;wind=Math.max(0,Math.min(12,wind));
+  windHist.push(wind);if(windHist.length>20)windHist.shift();
+  if(pump){runSec+=0.5;irrigD+=Math.random()*0.005;}
+  if(pump){ec10-=(Math.random()*0.03+0.005);ec20-=(Math.random()*0.02+0.004);}else{ec10+=(Math.random()-0.35)*0.008;ec20+=(Math.random()-0.35)*0.006;}
+  ec10=Math.max(0.3,Math.min(4.5,ec10));ec20=Math.max(0.2,Math.min(3.5,ec20));
+  frontSpeed+=(Math.random()-0.48)*0.005;frontSpeed=Math.max(0.1,Math.min(0.9,frontSpeed));
+  frontDepth+=frontSpeed*2;frontDepth=Math.min(50,frontDepth);
+  frontPhase=frontDepth<20?0:(frontDepth<30?1:(frontDepth<40?2:(frontDepth<45?3:4)));
+
+  var C=Math.PI*38;
+  var ha=document.getElementById("humArc"),ta=document.getElementById("tempArc"),ea=document.getElementById("ecArc"),pa=document.getElementById("phArc");
+  if(ha)ha.setAttribute("stroke-dasharray",(hum/100*C)+" "+C);
+  if(ta)ta.setAttribute("stroke-dasharray",((temp-15)/25*C)+" "+C);
+  if(ea)ea.setAttribute("stroke-dasharray",(ec/5*C)+" "+C);
+  if(pa)pa.setAttribute("stroke-dasharray",((ph-3)/8*C)+" "+C);
+  var hv=document.getElementById("humV"),tv=document.getElementById("tempV"),ev=document.getElementById("ecV"),pv=document.getElementById("phV");
+  if(hv)hv.textContent=Math.round(hum);if(tv)tv.textContent=temp.toFixed(1);if(ev)ev.textContent=ec.toFixed(1);if(pv)pv.textContent=ph.toFixed(1);
+
+  var hs=document.getElementById("humSt"),hb=document.getElementById("humBdg");
+  if(hum<20){if(hs){hs.innerHTML='<span class="dot">●</span>严重干旱';hs.className="si-status si-danger";}setBadge(hb,"badge-danger");if(hb)hb.textContent="严重";}
+  else if(hum<TS){if(hs){hs.innerHTML='<span class="dot">●</span>轻度干旱';hs.className="si-status si-warn";}setBadge(hb,"badge-warn");if(hb)hb.textContent="偏干";}
+  else if(hum>TE){if(hs){hs.innerHTML='<span class="dot">●</span>充足';hs.className="si-status si-ok";}setBadge(hb,"badge-ok");if(hb)hb.textContent="充足";}
+  else{if(hs){hs.innerHTML='<span class="dot">●</span>正常';hs.className="si-status si-ok";}setBadge(hb,"badge-ok");if(hb)hb.textContent="正常";}
+
+  var tempS=document.getElementById("tempSt"),tempB=document.getElementById("tempBdg");
+  if(temp<15||temp>35){if(tempS){tempS.innerHTML='<span class="dot">●</span>异常';tempS.className="si-status si-danger";}setBadge(tempB,"badge-danger");if(tempB)tempB.textContent="异常";}
+  else if(temp<20||temp>30){if(tempS){tempS.innerHTML='<span class="dot">●</span>偏差';tempS.className="si-status si-warn";}setBadge(tempB,"badge-warn");if(tempB)tempB.textContent="偏差";}
+  else{if(tempS){tempS.innerHTML='<span class="dot">●</span>适宜';tempS.className="si-status si-ok";}setBadge(tempB,"badge-ok");if(tempB)tempB.textContent="正常";}
+
+  var ecS=document.getElementById("ecSt"),ecB=document.getElementById("ecBdg");
+  if(ec>4){if(ecS){ecS.innerHTML='<span class="dot">●</span>超标';ecS.className="si-status si-danger";}setBadge(ecB,"badge-danger");if(ecB)ecB.textContent="超标";}
+  else if(ec>2){if(ecS){ecS.innerHTML='<span class="dot">●</span>偏高';ecS.className="si-status si-warn";}setBadge(ecB,"badge-warn");if(ecB)ecB.textContent="偏高";}
+  else{if(ecS){ecS.innerHTML='<span class="dot">●</span>正常';ecS.className="si-status si-ok";}setBadge(ecB,"badge-ok");if(ecB)ecB.textContent="正常";}
+
+  var phS=document.getElementById("phSt"),phB=document.getElementById("phBdg");
+  if(ph<5.5||ph>8.5){if(phS){phS.innerHTML='<span class="dot">●</span>异常';phS.className="si-status si-danger";}setBadge(phB,"badge-danger");if(phB)phB.textContent="异常";}
+  else if(ph<6||ph>8){if(phS){phS.innerHTML='<span class="dot">●</span>偏差';phS.className="si-status si-warn";}setBadge(phB,"badge-warn");if(phB)phB.textContent="偏差";}
+  else{if(phS){phS.innerHTML='<span class="dot">●</span>中性';phS.className="si-status si-ok";}setBadge(phB,"badge-ok");if(phB)phB.textContent="中性";}
+
+  bp=Math.max(0,Math.min(100,((bat-10.5)/4)*100));
+  var bf=document.getElementById("battF"),bpt=document.getElementById("battP");
+  if(bf)bf.style.width=bp+"%";if(bpt)bpt.textContent=Math.round(bp)+"%";
+
+  var prt=document.getElementById("pumpRunTime3");if(prt)prt.innerHTML="&#9201; "+Math.floor(runSec/60)+"m "+Math.floor(runSec%60)+"s";
+
+  var lb=document.getElementById("lightBar"),lv=document.getElementById("lightVal");
+  if(lb)lb.style.width=((light/90000)*100)+"%";if(lv)lv.textContent=(light/1000).toFixed(1)+"k lux";
+  var tb=document.getElementById("tempBar"),tv=document.getElementById("tempVal");
+  if(tb)tb.style.width=((temp/40)*100)+"%";if(tv)tv.textContent=temp.toFixed(1)+"°";
+  var eb=document.getElementById("envHumBar"),ev=document.getElementById("envHumVal");
+  if(eb)eb.style.width=envH+"%";if(ev)ev.textContent=Math.round(envH)+"%";
+  var pb=document.getElementById("phBar"),pv=document.getElementById("phVal");
+  if(pb)pb.style.width=(ph/14*100)+"%";if(pv)pv.textContent=ph.toFixed(1);
+  var sb=document.getElementById("salBar"),sv=document.getElementById("salVal");
+  if(sb)sb.style.width=Math.min(100,salinity*20)+"%";if(sv)sv.textContent=salinity.toFixed(1);
+  var cb2=document.getElementById("ecBar"),cv2=document.getElementById("ecVal");
+  if(cb2)cb2.style.width=Math.min(100,ec*20)+"%";if(cv2)cv2.textContent=ec.toFixed(1);
+  var nb=document.getElementById("nitroBar"),nv=document.getElementById("nitroVal");
+  if(nb)nb.style.width=Math.min(100,nitro/200*100)+"%";if(nv)nv.textContent=nitro.toFixed(1);
+  var pb3=document.getElementById("phosBar"),pv3=document.getElementById("phosVal");
+  if(pb3)pb3.style.width=Math.min(100,phos/200*100)+"%";if(pv3)pv3.textContent=phos.toFixed(1);
+  var kb=document.getElementById("potassBar"),kv=document.getElementById("potassVal");
+  if(kb)kb.style.width=Math.min(100,potass/200*100)+"%";if(kv)kv.textContent=potass.toFixed(1);
+
+  var e10v=document.getElementById("ec10Val"),e10b=document.getElementById("ec10Bar"),e10t=document.getElementById("ec10Trend"),e10dg=document.getElementById("ec10Bdg");
+  if(e10v)e10v.textContent=ec10.toFixed(2);
+  if(e10b)e10b.style.width=Math.min(100,ec10/4*100)+"%";
+  if(e10t)e10t.textContent=ec10>2.5?"▼ 洗盐进行中":"▼ 正常下降";e10t.style.color=ec10>2.5?"#b388ff":"#009a4e";
+  if(e10dg){e10dg.textContent=ec10>2.5?"偏高":"正常";setBadge(e10dg,ec10>2.5?"badge-purple":"badge-ok");}
+  var e20v=document.getElementById("ec20Val"),e20b=document.getElementById("ec20Bar"),e20t=document.getElementById("ec20Trend"),e20dg=document.getElementById("ec20Bdg");
+  if(e20v)e20v.textContent=ec20.toFixed(2);
+  if(e20b)e20b.style.width=Math.min(100,ec20/4*100)+"%";
+  if(e20t)e20t.textContent=ec20>2.0?"▼ 仍需洗盐":"▼ 稳定下降";e20t.style.color=ec20>2.0?"#ffab40":"#009a4e";
+  if(e20dg){e20dg.textContent=ec20>2.0?"仍需改善":"正常";setBadge(e20dg,ec20>2.0?"badge-warn":"badge-ok");}
+  var fsv=document.getElementById("frontSpeed"),fdv=document.getElementById("frontDepth"),fbar=document.getElementById("frontBar"),fp=document.getElementById("frontPhase"),fdg=document.getElementById("frontBdg");
+  if(fsv)fsv.textContent=frontSpeed.toFixed(2);
+  if(fdv)fdv.textContent=Math.round(frontDepth);
+  if(fbar)fbar.style.width=Math.min(100,frontDepth/50*100)+"%";
+  var phases=["初始化","润湿锋形成","洗盐推进","深度淋洗","达标复检"];
+  var phasePcts=["100%","65%","30%","0%","0%"];
+  if(fp)fp.textContent="阶段: "+phases[Math.min(4,frontPhase)]+" "+phasePcts[Math.min(4,frontPhase)];
+  if(fdg)fdg.textContent=phases[Math.min(4,frontPhase)];
+
+  upDec();
+  try{updateAdvice();}catch(e){}
+
+  var mw=document.getElementById("miniWlv");if(mw)mw.textContent=(5*wlv/100).toFixed(1)+"L";
+  var mb2=document.getElementById("miniBat");if(mb2)mb2.textContent=bat.toFixed(1)+"V";
+  var mt=document.getElementById("miniTime");if(mt)mt.textContent=Math.floor(runSec/60)+"m";
+  var nab=document.getElementById("navAlertBadge"),alertCount=document.querySelectorAll("#alertListFull .al-item.danger, #alertListFull .al-item.warn").length;
+  if(nab)nab.textContent=alertCount||"";
+
+  upP();
+
+  hd.shift();wd.shift();bd.shift();
+  hd.push(hum+(Math.random()-.5)*14);wd.push(wind+(Math.random()-.5)*2.2);bd.push(bat+(Math.random()-.5)*0.6);
+  hh.push(hum);tempHist.push(temp);ecHist.push(ec);phHist.push(ph);
+  if(hh.length>80)hh.shift();if(tempHist.length>80)tempHist.shift();if(ecHist.length>80)ecHist.shift();if(phHist.length>80)phHist.shift();
+  pHist.push(hum);if(pHist.length>120)pHist.shift();
+  ec10Hist.push(ec10);if(ec10Hist.length>20)ec10Hist.shift();
+  ec20Hist.push(ec20);if(ec20Hist.length>20)ec20Hist.shift();
+  solarHist.push(light/2500+(Math.random()-.5)*12);if(solarHist.length>20)solarHist.shift();
+  loadHist.push((pump?12.3:2.8)+(Math.random()-.5)*5);if(loadHist.length>20)loadHist.shift();
+  pulseHist.push(pump?1:0);if(pulseHist.length>12)pulseHist.shift();
+
+  var mh=document.getElementById("mCurHum");if(mh)mh.textContent=Math.round(hum)+"%";
+  var ml=document.getElementById("mCurHumLabel");if(ml)ml.textContent=hum<TS?"偏干":(hum>TE?"达标":"正常");
+  var hr=document.getElementById("mHumRange");if(hr){var mxH=Math.max.apply(null,pHist),mnH=Math.min.apply(null,pHist);hr.textContent=Math.round(mxH)+"% / "+Math.round(mnH)+"%";}
+  var ha2=document.getElementById("mHumAvg");if(ha2)ha2.textContent=Math.round(pHist.reduce(function(a,b){return a+b;},0)/pHist.length)+"%";
+  var hr2=document.getElementById("mHumRate");if(hr2){var okC=0;pHist.forEach(function(v){if(v>=TS)okC++;});hr2.textContent=Math.round(okC/pHist.length*100)+"%";}
+
+  var evt=document.getElementById("enVolt");if(evt)evt.textContent=bat.toFixed(1)+"V";
+  var evs=document.getElementById("enVoltSt");if(evs)evs.textContent=bat<TV?"欠压":(bat<11.8?"偏低":"正常");
+  var es=document.getElementById("enSolar");if(es)es.textContent=(light/2500).toFixed(1)+"W";
+  var ewind=document.getElementById("enWind");if(ewind)ewind.textContent=Math.max(0,wind*wind*0.4).toFixed(1)+"W";
+  var ewspd=document.getElementById("enWindSpeed");if(ewspd)ewspd.textContent=wind.toFixed(1);
+  var el=document.getElementById("enLoad");if(el)el.textContent=(pump?12.3:2.8).toFixed(1)+"W";
+  var els=document.getElementById("enLoadSt");if(els)els.textContent=pump?"水泵运行":"待机";
+  var esoc=document.getElementById("enSOC");if(esoc)esoc.textContent=Math.round(bp)+"%";
+  var emv=document.getElementById("enMinV");if(emv)emv.textContent=Math.min.apply(null,bd).toFixed(1)+"V";
+  var solarP=light/2500,loadP=pump?12.3:2.8,windP=Math.max(0,wind*wind*0.4),totalP=solarP+windP,selfRate=Math.round(Math.min(100,solarP/Math.max(1,loadP)*50));
+  var remainH=(bat-11.5)/0.3;
+  var eSR=document.getElementById("enSelfRate");if(eSR)eSR.textContent=selfRate+"%";
+  var eWR=document.getElementById("enWindRate");if(eWR)eWR.textContent=totalP>0?Math.round(windP/totalP*100)+"%":"0%";
+  var eTP=document.getElementById("enTotalPower");if(eTP)eTP.textContent=totalP.toFixed(1)+"W";
+  var eTL=document.getElementById("enTotalLoad");if(eTL)eTL.textContent=loadP.toFixed(1)+"W";
+  var eRT=document.getElementById("enRemainTime");if(eRT)eRT.textContent=Math.max(0,remainH).toFixed(1)+"小时";
+  var eSc=document.getElementById("enScore");if(eSc)eSc.textContent=Math.round(60+selfRate*0.4)+"分";
+  var eSL=document.getElementById("enSuggestLight");if(eSL)eSL.textContent=(light/1000).toFixed(0)+"k lux";
+  var eSW=document.getElementById("enSuggestWind");if(eSW)eSW.textContent=wind.toFixed(1)+" m/s";
+  var eAd1=document.getElementById("enAdvice1");if(eAd1){eAd1.innerHTML='光伏自给率 <strong id="enSelfRate">'+selfRate+'%</strong>，风力贡献占比 <strong id="enWindRate">'+(totalP>0?Math.round(windP/totalP*100)+"%":"0%")+'</strong>。';}
+  var eAd2=document.getElementById("enAdvice2");if(eAd2){eAd2.innerHTML='当前风光总功率 <strong id="enTotalPower">'+totalP.toFixed(1)+'W</strong>，系统负荷 <strong id="enTotalLoad">'+loadP.toFixed(1)+'W</strong>。';}
+  var eAd3=document.getElementById("enAdvice3");if(eAd3){eAd3.innerHTML='电池剩余容量可支撑 <strong id="enRemainTime">'+Math.max(0,remainH).toFixed(1)+'小时</strong> 待机运行。';}
+  var eAd4=document.getElementById("enAdvice4");if(eAd4){eAd4.innerHTML='今日能源效率评分 <strong id="enScore">'+Math.round(60+selfRate*0.4)+'分</strong>，风光利用率'+(selfRate>60?'优秀':'一般')+'。';}
+  var eAd5=document.getElementById("enAdvice5");if(eAd5){eAd5.innerHTML='建议：当前风速 <strong id="enSuggestWind">'+wind.toFixed(1)+' m/s</strong>，光照 <strong id="enSuggestLight">'+(light/1000).toFixed(0)+'k lux</strong>，'+(totalP>loadP?'有盈余可储':'建议降低负荷')+'。';}
+  var dayGen=(light/2500*8/1000).toFixed(2),dayUse=(loadP*8/1000).toFixed(2),surplus=(dayGen-dayUse).toFixed(2);
+  var dg2=document.getElementById("enDayGen2");if(dg2)dg2.textContent=dayGen+"kWh";
+  var du2=document.getElementById("enDayUse2");if(du2)du2.textContent=dayUse+"kWh";
+  var ns=document.getElementById("enNetSurplus");if(ns)ns.textContent=Math.max(0,surplus)+"kWh";
+  var eBS=document.getElementById("enBalanceSolar");if(eBS)eBS.textContent=solarP.toFixed(1);
+  var eBL=document.getElementById("enBalanceLoad");if(eBL)eBL.textContent=loadP.toFixed(1);
+  var edg=document.getElementById("enDayGen");if(edg)edg.textContent=dayGen+"kWh";
+  var edu=document.getElementById("enDayUse");if(edu)edu.textContent=dayUse+"kWh";
+
+  var ci=document.getElementById("cIrrig");if(ci)ci.textContent=irrigD.toFixed(1)+"L";
+  var cit=document.getElementById("cIrrigTimes");if(cit)cit.textContent="累计 "+Math.floor(irrigD/40)+" 次";
+  var cid=document.getElementById("cIrrigDuration");if(cid)cid.textContent="运行 "+Math.floor(runSec/3600)+"h "+Math.floor((runSec%3600)/60)+"m";
+  var iq=document.getElementById("irrigQuota");if(iq)iq.textContent=Math.round(Math.min(100,irrigD/150*100))+"%";
+
+  safeRedraw();
+},250);
+
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")safeRedraw();});
+window.addEventListener("focus",safeRedraw);
+window.addEventListener("resize",safeRedraw);
+
+})();
+</script>
+</body>
+</html>
