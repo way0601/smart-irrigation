@@ -551,9 +551,38 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @keyframes chartGlow{0%,100%{box-shadow:0 0 4px rgba(0,154,78,.06),inset 0 0 8px rgba(0,154,78,0)}50%{box-shadow:0 0 10px rgba(0,154,78,.12),inset 0 0 16px rgba(0,154,78,.03)}}
 @keyframes dataPulse{0%,100%{opacity:.85}50%{opacity:1}}
 @keyframes dashFlow{0%{background-position:0 0}100%{background-position:40px 0}}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px}
+.setting-card{background:rgba(0,154,78,.04);border:1px solid rgba(0,154,78,.12);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.setting-card h3{font-size:13px;color:var(--text-main);margin:0;display:flex;align-items:center;gap:6px}
+.setting-card h3 i{font-size:16px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.setting-row label{font-size:11px;color:var(--text-sub)}
+.setting-row select,.setting-row input{background:#fff;border:1px solid rgba(0,154,78,.2);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text-main);outline:none;width:140px}
+.setting-row select:focus,.setting-row input:focus{border-color:var(--primary);box-shadow:0 0 4px var(--primary-glow)}
+.setting-btn{padding:8px 20px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.setting-btn.primary{background:var(--primary);color:#fff}
+.setting-btn.primary:hover{box-shadow:0 4px 12px var(--primary-glow);transform:translateY(-1px)}
+.setting-btn.outline{background:transparent;border:1px solid var(--primary);color:var(--primary)}
+.setting-btn.outline:hover{background:var(--primary-soft)}
+.setting-btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+.setting-btn.danger:hover{background:rgba(211,47,47,.08)}
+.setting-user-info{display:flex;align-items:center;gap:10px;padding:8px;background:rgba(0,154,78,.06);border-radius:8px}
+.setting-user-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px}
+.setting-user-name{font-size:14px;font-weight:700;color:var(--text-main)}
+.setting-user-role{font-size:10px;color:var(--text-dim)}
+.setting-cloud-status{display:flex;align-items:center;gap:6px;font-size:11px;padding:6px 10px;border-radius:6px;background:rgba(0,154,78,.06)}
+.setting-cloud-dot{width:8px;height:8px;border-radius:50%}
+.setting-cloud-dot.online{background:#009a4e;box-shadow:0 0 6px rgba(0,154,78,.4)}
+.setting-cloud-dot.offline{background:#d32f2f;box-shadow:0 0 6px rgba(211,47,47,.4)}
+#panel-settings{flex-direction:column;padding:12px;gap:12px}
 /* ============================================================
    31. Responsive
-   ============================================================ */
+ /* Toggle Switch */
+.toggle-sw{width:36px;height:20px;border-radius:10px;background:rgba(0,0,0,.15);position:relative;cursor:pointer;transition:all .25s;flex-shrink:0}
+.toggle-sw::after{content:'';width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:all .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-sw.on{background:var(--primary)}.toggle-sw.on::after{left:18px}
+.setting-toggle label{font-size:11px;color:var(--text-sub);flex:1}
+  ============================================================ */
 @media(max-width:1366px){
   .metric-card .val{font-size:24px}.big-val{font-size:26px}
   .card-hdr .lbl{font-size:12px}
@@ -587,6 +616,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     <button class="nav-item" data-panel="soil"><span class="ni-dot"></span>墒情分析</button>
     <button class="nav-item" data-panel="energy"><span class="ni-dot"></span>能源分析</button>
     <button class="nav-item" data-panel="advice"><span class="ni-dot"></span>决策建议</button>
+    <button class="nav-item" data-panel="settings"><span class="ni-dot"></span>设置</button>
   </nav>
   <div class="sb-footer">
     <div class="sb-avatar">&#128100;</div>
@@ -1212,6 +1242,77 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     </div>
   </div>
   </div>
+
+  <div class="panel" id="panel-settings">
+    <!-- 用户账户 -->
+    <div class="card">
+      <div class="card-hdr"><span class="lbl">用户账户</span></div>
+      <div class="setting-user-info" id="settingUserCard">
+        <div class="setting-user-avatar" id="settingAvatar">管</div>
+        <div><div class="setting-user-name" id="settingUserName">管理员</div><div class="setting-user-role" id="settingUserRole">离线模式</div></div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="setting-btn primary" id="settingLoginBtn">登录</button>
+          <button class="setting-btn danger" id="settingLogoutBtn" style="display:none">登出</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 语言 -->
+    <div class="card">
+      <div class="card-hdr"><span class="lbl">语言</span></div>
+      <div style="padding:8px 16px">
+        <div class="setting-row"><label id="langLabel">界面语言</label>
+        <select id="langSelect">
+          <option value="zh">中文</option><option value="en">English</option>
+          <option value="ug">ئۇيغۇرچە</option><option value="kk">Қазақша</option>
+          <option value="ky">Кыргызча</option><option value="mn">ᠮᠣᠩᠭᠣᠯ</option><option value="bo">བོད་སྐད།</option>
+        </select></div>
+      </div>
+    </div>
+
+    <!-- 通知设置 -->
+    <div class="card">
+      <div class="card-hdr"><span class="lbl">通知设置</span></div>
+      <div style="padding:8px 16px;display:flex;flex-direction:column;gap:8px">
+        <div class="setting-row setting-toggle"><label>旱情预警通知</label><span class="toggle-sw" id="toggDry">&#8203;</span></div>
+        <div class="setting-row setting-toggle"><label>电压异常通知</label><span class="toggle-sw on" id="toggVolt">&#8203;</span></div>
+        <div class="setting-row setting-toggle"><label>EC 超标通知</label><span class="toggle-sw on" id="toggEc">&#8203;</span></div>
+        <div class="setting-row setting-toggle"><label>云端断连通知</label><span class="toggle-sw" id="toggCloud">&#8203;</span></div>
+      </div>
+    </div>
+
+    <!-- 云端连接 -->
+    <div class="card">
+      <div class="card-hdr"><span class="lbl">云端连接</span></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="setting-cloud-status">
+          <span class="setting-cloud-dot" id="settingsCloudDot" style="background:#d32f2f"></span>
+          <span style="color:var(--text-sub);font-size:11px" id="settingsCloudLabel">未连接</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim)">
+          <div>主机: sh-5-mqtt.iot-api.com:1883</div>
+          <div>API: sh-5-api.iot-api.com</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="setting-btn outline" id="settingReconnectBtn">重新连接</button>
+          <button class="setting-btn outline" onclick="resetAllSettings()">恢复默认</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统信息 -->
+    <div class="card">
+      <div class="card-hdr"><span class="lbl">系统信息</span></div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--text-sub)">
+        <div style="display:flex;justify-content:space-between"><span class="info-row-label">系统版本</span><span style="color:var(--text-main)">v2.1.0</span></div>
+        <div style="display:flex;justify-content:space-between"><span class="info-row-label">运行模式</span><span style="color:var(--primary)" id="setSysMode">云端优先</span></div>
+        <div style="display:flex;justify-content:space-between"><span class="info-row-label">运行时长</span><span style="color:var(--text-main)" id="setUptime">--</span></div>
+        <div style="display:flex;justify-content:space-between"><span class="info-row-label">设备 ID</span><span style="color:var(--text-main)">gy3gruqzqds9jofl</span></div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:4px"><span class="sys-tagline">逐光巡墒 —— 智慧墒情巡检与旱情预警系统</span></div>
+      </div>
+    </div>
+  </div>
+  </div>
 </main>
 </div>
 
@@ -1402,41 +1503,41 @@ function upP(){
   }
   if(mode==="auto"){
     if(pump){
-      if(hum>TE){pump=false;runSec=0;setBtn(b3,l3,"stopped","达标停机");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 已达标('+TE+'%)';
-        setBadge(cb,"badge-ok");if(cb)cb.textContent="已达标";}
-      else if(!w){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 低水位锁定';
-        setBadge(cb,"badge-warn");if(cb)cb.textContent="低水位锁定";}
-      else if(!v){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 欠压锁定';
-        setBadge(cb,"badge-warn");if(cb)cb.textContent="欠压锁定";}
-      else if(to){pump=false;runSec=0;setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> 超时锁定';
-        setBadge(cb,"badge-danger");if(cb)cb.textContent="超时锁定";}
-      else{setBtn(b3,l3,"running","运行");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 自动监测中';}
+      if(hum>TE){pump=false;runSec=0;setBtn(b3,l3,"stopped",_("pumpStoppedTarget"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> '+_f("humReachedPct",TE);
+        setBadge(cb,"badge-ok");if(cb)cb.textContent=_("reachedTarget");}
+      else if(!w){pump=false;runSec=0;setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> '+_("lowWaterLocked");
+        setBadge(cb,"badge-warn");if(cb)cb.textContent=_("lowWaterLocked");}
+      else if(!v){pump=false;runSec=0;setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> '+_("undervoltLocked");
+        setBadge(cb,"badge-warn");if(cb)cb.textContent=_("undervoltLocked");}
+      else if(to){pump=false;runSec=0;setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> '+_("timeoutLocked");
+        setBadge(cb,"badge-danger");if(cb)cb.textContent=_("timeoutLocked");}
+      else{setBtn(b3,l3,"running",_("pumpRun"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> '+_("autoMonitoring");}
     }else{
       var start=hum<TS;
-      if(start&&w&&v&&!to){pump=true;runSec=0;setBtn(b3,l3,"running","运行");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 自动监测启动';
-        setBadge(cb,"badge-ok");if(cb)cb.textContent="运行中";}
-      else if(hum>=TS){setBtn(b3,l3,"stopped","待机");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> 湿度≥'+TS+'% 待机';
-        setBadge(cb,"");if(cb)cb.textContent="待机";}
-      else if(!w){setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 低水位禁止';
-        setBadge(cb,"badge-warn");if(cb)cb.textContent="低水位锁定";}
-      else if(!v){setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> 欠压禁止';
-        setBadge(cb,"badge-warn");if(cb)cb.textContent="欠压锁定";}
-      else if(to){setBtn(b3,l3,"locked","锁定");
-        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> 超时禁止';
-        setBadge(cb,"badge-danger");if(cb)cb.textContent="超时锁定";}
+      if(start&&w&&v&&!to){pump=true;runSec=0;setBtn(b3,l3,"running",_("pumpRun"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> '+_("autoMonitorStarted");
+        setBadge(cb,"badge-ok");if(cb)cb.textContent=_("runningStatus");}
+      else if(hum>=TS){setBtn(b3,l3,"stopped",_("standbyStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> '+_f("humAboveThresh",TS);
+        setBadge(cb,"");if(cb)cb.textContent=_("standbyStatus");}
+      else if(!w){setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> '+_("lowWaterForbidden");
+        setBadge(cb,"badge-warn");if(cb)cb.textContent=_("lowWaterLocked");}
+      else if(!v){setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ffab40">●</span> '+_("undervoltForbidden");
+        setBadge(cb,"badge-warn");if(cb)cb.textContent=_("undervoltLocked");}
+      else if(to){setBtn(b3,l3,"locked",_("lockedStatus"));
+        if(ps)ps.innerHTML='<span class="dot" style="color:#ff5252">●</span> '+_("timeoutForbidden");
+        setBadge(cb,"badge-danger");if(cb)cb.textContent=_("timeoutLocked");}
     }
   }else{
-    if(pump){setBtn(b3,l3,"running","运行");if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> 手动运行';setBadge(cb,"badge-ok");if(cb)cb.textContent="手动运行";}
-    else{setBtn(b3,l3,"stopped","停止");if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> 手动停止';setBadge(cb,"");if(cb)cb.textContent="已停止";}
+    if(pump){setBtn(b3,l3,"running",_("pumpRun"));if(ps)ps.innerHTML='<span class="dot" style="color:#009a4e">●</span> '+_("manualRunning");setBadge(cb,"badge-ok");if(cb)cb.textContent=_("manualRunning");}
+    else{setBtn(b3,l3,"stopped",_("pumpStop"));if(ps)ps.innerHTML='<span class="dot" style="color:#5a7a65">●</span> '+_("manualStopped");setBadge(cb,"");if(cb)cb.textContent=_("alreadyStopStatus");}
   }
 }
 
@@ -1450,27 +1551,27 @@ function upDec(){
   var tD=document.getElementById("tagDemand"),tC=document.getElementById("tagCondition"),tS=document.getElementById("tagSafety");
   var fD=document.getElementById("fsDemand"),fC=document.getElementById("fsCondition"),fS=document.getElementById("fsSafety"),fE=document.getElementById("fsExec");
   if(ok){
-    if(dI)dI.textContent="\u2705";if(dT){dT.textContent="决策：建议灌溉";dT.className="dec-text allow";}
-    if(dD)dD.textContent=(pump?"灌溉进行中(hum≤"+TE+"%)":"当前墒情低于田持60%，满足灌溉条件")+" | 电压正常";
+    if(dI)dI.textContent="\u2705";if(dT){dT.textContent=_("decisionLabel")+"："+_("adviseIrrigateLabel");dT.className="dec-text allow";}
+    if(dD)dD.textContent=(pump?_f("irrigRunningWithPct",TE):_("belowFieldCapCond"))+" | "+_("voltageNormal");
     if(dB)dB.style.background="linear-gradient(180deg,rgba(22,58,40,.9),rgba(18,42,30,.76))";
-    setBadge(dBa,"badge-ok");if(dBa)dBa.textContent="允许";
+    setBadge(dBa,"badge-ok");if(dBa)dBa.textContent=_("allowDecision");
     if(tD)tD.className="dec-tag ready";if(tC)tC.className="dec-tag ok";if(tS)tS.className="dec-tag ok";
     if(fD)fD.className="fs active";if(fC)fC.className="fs active";if(fS)fS.className="fs active";if(fE)fE.className="fs active";
   }else{
-    if(dI)dI.textContent="\u274c";if(dT){dT.textContent="决策：暂未预警";dT.className="dec-text deny";}
-    var rs=[];if(!n&&!pump)rs.push("湿度"+hum.toFixed(0)+"% ≥ "+TS+"%");if(pump&&hum>TE)rs.push("已达"+TE+"%停止阈值");if(!w)rs.push("水位不足");if(!v)rs.push("欠压");if(to)rs.push("超时");
+    if(dI)dI.textContent="\u274c";if(dT){dT.textContent=_("decisionLabel")+"："+_("noAlertShort");dT.className="dec-text deny";}
+    var rs=[];if(!n&&!pump)rs.push(_f("humExceedsTS",hum.toFixed(0),TS));if(pump&&hum>TE)rs.push(_f("reachedStopThresh",TE));if(!w)rs.push(_("waterInsufficient"));if(!v)rs.push(_("undervoltage"));if(to)rs.push(_("timeoutLabel"));
     if(dD)dD.textContent=rs.join(" | ");if(dB)dB.style.background="rgba(255,82,82,.05)";
-    setBadge(dBa,"badge-danger");if(dBa)dBa.textContent="禁止";
+    setBadge(dBa,"badge-danger");if(dBa)dBa.textContent=_("forbidDecision");
     if(tD)tD.className="dec-tag "+(n||pump?"ready":"warn");if(tC)tC.className="dec-tag "+((w&&v)?"ok":"danger");if(tS)tS.className="dec-tag "+(to?"danger":"ok");
     if(fD)fD.className="fs "+((n||pump)?"active":"");if(fC)fC.className="fs "+((w&&v)?"active":"");if(fS)fS.className="fs "+(to?"":"active");if(fE)fE.className="fs";
   }
   var cl=document.getElementById("cModeLabel"),cp=document.getElementById("cPumpLabel"),cd=document.getElementById("cDecLabel");
   var cs=document.getElementById("cDemandShort"),cc=document.getElementById("cCondShort");
-  if(cl)cl.textContent=mode==="auto"?"自动联锁":"手动控制";
-  if(cp)cp.textContent=pump?"运行中":"停止";
-  if(cd)cd.textContent=ok?"建议灌溉":"暂未预警";
-  if(cs){cs.textContent=(n||pump)?"需关注":"不满足";cs.style.color=(n||pump)?null:null;}
-  if(cc){cc.textContent=(w&&v)?"水位/电压正常":"条件不足";cc.style.color=(w&&v)?null:null;}
+  if(cl)cl.textContent=mode==="auto"?_("autoInterlock"):_("manualControlDesc");
+  if(cp)cp.textContent=pump?_("runningStatus"):_("pumpStop");
+  if(cd)cd.textContent=ok?_("adviseIrrigateLabel"):_("noAlertShort");
+  if(cs){cs.textContent=(n||pump)?_("needAttention"):_("notMetCond");cs.style.color=(n||pump)?null:null;}
+  if(cc){cc.textContent=(w&&v)?_("waterVoltNormal"):_("conditionInsufficient");cc.style.color=(w&&v)?null:null;}
 }
 
 function updateAdvice(){
@@ -1478,33 +1579,33 @@ function updateAdvice(){
   var startOk=!pump&&n&&w&&v&&!to,runningOk=pump&&hum<=TE&&w&&v&&!to,ok=startOk||runningOk;
   var b=document.getElementById("advBanner"),di=document.getElementById("advDecIcon"),dt=document.getElementById("advDecTitle"),dd=document.getElementById("advDecDesc"),dg=document.getElementById("advDecTags");
   if(ok){
-    if(b)b.className="advice-decision-card";if(di)di.textContent="\u2705";if(dt)dt.textContent="建议关注";if(dd)dd.textContent="土壤湿度"+hum.toFixed(0)+"%低于旱情阈值"+TS+"%，建议持续监测关注；电池电压"+bat.toFixed(1)+"V正常。";
-    if(dg)dg.innerHTML='<span class="advice-tag green">三层联锁通过</span><span class="advice-tag cyan">风光互补供能正常</span><span class="advice-tag green">可监测跟进</span>';
-    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent="高优先级";ab.className="badge badge-ok";}
-    var at=document.getElementById("advActionTitle");if(at)at.textContent="建议监测跟进";
-    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent="当前墒情低于田持60%，满足灌溉条件，三层联锁均通过，建议启动灌溉。";
-    var al=document.getElementById("advActionList");if(al)al.innerHTML='<div class="action-item">检查传感器连接状态</div><div class="action-item">确认水源与管路正常</div><div class="action-item">持续监测并分析墒情趋势湿度回升</div>';
+    if(b)b.className="advice-decision-card";if(di)di.textContent="\u2705";if(dt)dt.textContent=_("adviseAttention");if(dd)dd.textContent=_f("advDescBelowThresh",hum.toFixed(0),TS,bat.toFixed(1));
+    if(dg)dg.innerHTML='<span class="advice-tag green">'+_("actionLockPass")+'</span><span class="advice-tag cyan">'+_("solarWindNormal")+'</span><span class="advice-tag green">'+_("canMonitorFollow")+'</span>';
+    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent=_("highPriority");ab.className="badge badge-ok";}
+    var at=document.getElementById("advActionTitle");if(at)at.textContent=_("adviseMonitorFollowLabel");
+    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent=_("descBelowFieldCapFull");
+    var al=document.getElementById("advActionList");if(al)al.innerHTML='<div class="action-item">'+_("actionCheckSensor")+'</div><div class="action-item">'+_("actionCheckWater")+'</div><div class="action-item">'+_("actioNMonitorTrend")+'</div>';
     var ar=document.getElementById("advReasons");if(ar)ar.style.display="none";
   }else{
-    if(b)b.className="advice-decision-card deny";if(di)di.textContent="\u274c";if(dt)dt.textContent="暂不建议关注";
-    var reasons=[];if(pump&&hum<=TE)reasons.push({t:"湿度已达适宜范围",c:"green"});if(!n&&!pump)reasons.push({t:"湿度未达阈值",c:"orange"});if(!w)reasons.push({t:"水位不足",c:"red"});if(!v)reasons.push({t:"欠压闭锁",c:"red"});if(to)reasons.push({t:"安全间歇",c:"red"});
-    if(dd)dd.textContent=pump&&hum<=TE?"当前湿度已达到"+TE+"%停止阈值，灌溉正常完成，系统自动停机待命。":"当前存在"+(reasons.length||1)+"项拦截条件，系统已暂缓灌溉建议。";
+    if(b)b.className="advice-decision-card deny";if(di)di.textContent="\u274c";if(dt)dt.textContent=_("adviseNotAttention");
+    var reasons=[];if(pump&&hum<=TE)reasons.push({t:_("humReachedOptimal"),c:"green"});if(!n&&!pump)reasons.push({t:_("humNotThreshold"),c:"orange"});if(!w)reasons.push({t:_("waterInsufficient"),c:"red"});if(!v)reasons.push({t:_("undervoltBlocked"),c:"red"});if(to)reasons.push({t:_("safetyInterval"),c:"red"});
+    if(dd)dd.textContent=pump&&hum<=TE?_f("descReachStopDone",TE):_f("interceptCount",reasons.length||1);
     var tagHtml="";reasons.forEach(function(r){tagHtml+='<span class="advice-tag '+r.c+'">'+r.t+'</span>';});
     if(dg)dg.innerHTML=tagHtml;
-    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent=pump&&hum<=TE?"已完成":"暂缓";ab.className="badge "+(pump&&hum<=TE?"badge-ok":"badge-warn");}
-    var at=document.getElementById("advActionTitle");if(at)at.textContent=pump&&hum<=TE?"监测正常，待机观察":"暂未预警，持续观察";
-    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent=pump&&hum<=TE?"湿度已达到"+TE+"%停止阈值，本次数据采集完成。系统将继续监测墒情变化。":"系统检测到以下拦截条件，请逐一排查后再监测跟进：";
-    var actions=[];if(pump&&hum<=TE)actions.push("监测湿度变化趋势");if(!n&&!pump)actions.push("继续巡检监测");if(!w)actions.push("检查水源，补充水位");if(!v)actions.push("补电或等待风光恢复");if(to)actions.push("等待安全间歇期结束");
+    var ab=document.getElementById("advActionBadge");if(ab){ab.textContent=pump&&hum<=TE?_("completed"):_("postponed");ab.className="badge "+(pump&&hum<=TE?"badge-ok":"badge-warn");}
+    var at=document.getElementById("advActionTitle");if(at)at.textContent=pump&&hum<=TE?_("monitorNormalStandby"):_("noAlertContinueWatch");
+    var ad2=document.getElementById("advActionDesc");if(ad2)ad2.textContent=pump&&hum<=TE?_f("descReachStopMonitor",TE):_("descInterceptList");
+    var actions=[];if(pump&&hum<=TE)actions.push(_("actioNMonitorHum"));if(!n&&!pump)actions.push(_("actionContinuePatrol"));if(!w)actions.push(_("actionCheckRefill"));if(!v)actions.push(_("actionChargeWait"));if(to)actions.push(_("actionWaitInterval"));
     var al=document.getElementById("advActionList");if(al){var ah="";actions.forEach(function(a){ah+='<div class="action-item">'+a+'</div>';});al.innerHTML=ah;}
     var ar=document.getElementById("advReasons");if(ar){ar.style.display="flex";ar.innerHTML=tagHtml;}
   }
-  var lb=document.getElementById("advLockBadge");if(lb){lb.textContent=ok?"全部通过":"未通过";lb.className="badge "+(ok?"badge-ok":"badge-warn");}
+  var lb=document.getElementById("advLockBadge");if(lb){lb.textContent=ok?_("allPassed"):_("notPassed");lb.className="badge "+(ok?"badge-ok":"badge-warn");}
   function setLock(i,cls,val,desc){
     var el=document.getElementById("advLock"+i);if(el)el.className="lock-step "+cls;
     var v=document.getElementById("advLockVal"+i);var d=document.getElementById("advLockDesc"+i);
-    if(i===0){if(v)v.textContent="湿度 "+hum.toFixed(0)+"%";if(d){d.textContent=(n||pump)?"低于旱情阈值"+TS+"%，触发旱情预警":"未低于阈值"+TS+"%，不触发";}}
-    if(i===1){if(v)v.textContent=bat.toFixed(1)+"V";if(d)d.textContent=v?"电压满足执行条件":"电压偏低";}
-    if(i===2){if(v)v.textContent=to?"已闭锁":"未闭锁";if(d)d.textContent=to?"超时保护触发":"处于旱情预警建议窗口";}
+    if(i===0){if(v)v.textContent=_("humidityShort")+" "+hum.toFixed(0)+"%";if(d){d.textContent=(n||pump)?_f("humBelowThreshAlert",TS):_f("humNotBelowThresh",TS);}}
+    if(i===1){if(v)v.textContent=bat.toFixed(1)+"V";if(d)d.textContent=v?_("voltageConditionMet"):_("voltageLow");}
+    if(i===2){if(v)v.textContent=to?_("alreadyLocked"):_("notLocked");if(d)d.textContent=to?_("timeoutProtectionTriggered"):_("inDroughtAlertWindow");}
   }
   setLock(0,(n||pump)?"pass":"warn");setLock(1,(w&&v)?"pass":"danger");setLock(2,to?"danger":"pass");
   var ph=document.getElementById("advPHum");if(ph)ph.textContent=hum.toFixed(0)+"%";
@@ -1512,10 +1613,10 @@ function updateAdvice(){
   var bs=document.getElementById("advBattSOC");if(bs)bs.textContent=Math.round(bp)+"%";
   var bb=document.getElementById("advBattBar");if(bb)bb.style.width=Math.round(bp)+"%";
   var bv=document.getElementById("advBattV");if(bv)bv.textContent=bat.toFixed(1)+"V";
-  var br=document.getElementById("advRange");if(br)br.textContent=bp>60?"≥3日":(bp>30?"≥1日":"<12小时");
-  var et=document.getElementById("advEnergyTip");if(et)et.textContent=bp>60?"风光互补正常，电量充足，可持续巡检。":(bp>30?"电量偏低，阴雨时降低刷新频率至5s。":"电量不足，建议立即补电。");
-  var tr=document.getElementById("advTrend");if(tr){var hh2=hh.slice(-10),tAvg=hh2.reduce(function(a,b){return a+b;},0)/hh2.length;tr.textContent=hum<tAvg?"下降 ▼":(hum>tAvg?"上升 ▲":"持平 →");tr.style.color=hum<tAvg?"#ff5252":(hum>tAvg?"#009a4e":"#ffab40");}
-  var lv=document.getElementById("advLevel");if(lv)lv.textContent=hum<20?"严重干旱":(hum<TS?"中度干旱":"轻度偏干");
+  var br=document.getElementById("advRange");if(br)br.textContent=bp>60?_("range3Days"):(bp>30?_("range1Day"):_("range12Hours"));
+  var et=document.getElementById("advEnergyTip");if(et)et.textContent=bp>60?_("energyNormalMsg"):(bp>30?_("energyLowMsg"):_("energyCritMsg"));
+  var tr=document.getElementById("advTrend");if(tr){var hh2=hh.slice(-10),tAvg=hh2.reduce(function(a,b){return a+b;},0)/hh2.length;tr.textContent=hum<tAvg?_("trendDown"):(hum>tAvg?_("trendUp"):_("trendFlat"));tr.style.color=hum<tAvg?"#ff5252":(hum>tAvg?"#009a4e":"#ffab40");}
+  var lv=document.getElementById("advLevel");if(lv)lv.textContent=hum<20?_("severeDrought"):(hum<TS?_("moderateDrought"):_("mildDry"));
 }
 
 function rc(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
@@ -1705,7 +1806,7 @@ function drawPowerGauge(id,s,l){
   ctx.fillStyle="#000";ctx.font="bold "+Math.round(r1*0.42)+"px 'DIN Alternate','Consolas',sans-serif";
   ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(Math.round(ratio*100)+"%",cx,cy-r1*0.52);
   // 副标题
-  ctx.fillStyle="#5a7a65";ctx.font=Math.round(r1*0.2)+"px sans-serif";ctx.fillText("光伏占比",cx,cy-r1*0.12);
+  ctx.fillStyle="#5a7a65";ctx.font=Math.round(r1*0.2)+"px sans-serif";ctx.fillText(_("solarRatio"),cx,cy-r1*0.12);
   // 底部说明文字
   ctx.fillStyle="#4a6a5a";ctx.font=Math.round(r1*0.15)+"px sans-serif";ctx.fillText(Math.round(s*10)/10+"W / "+(Math.round(l*10)/10)+"W",cx,cy+r1*0.2);
 }
@@ -1753,8 +1854,9 @@ function switchPanel(name){
   var navItem=document.querySelector('.nav-item[data-panel="'+name+'"]');
   if(navItem)navItem.classList.add("active");
   var db=document.getElementById("decBanner"),fb=document.querySelector(".flow-bar");
-  if(name==="energy"){if(db)db.style.display="none";if(fb)fb.style.display="none";}
+  if(name==="energy"||name==="settings"){if(db)db.style.display="none";if(fb)fb.style.display="none";}
   else{if(db)db.style.display="";if(fb)fb.style.display="";}
+  resetAllCanvas();
   safeRedraw();
 }
 document.querySelectorAll(".nav-item").forEach(function(item){
@@ -1802,6 +1904,7 @@ function redrawAll(){
   drawSolarBar("solarBarChart",solarHist,loadHist);
   drawPowerGauge("powerBalanceGauge",light/2500,(pump?12.3:2.8));
   drawIrrigPulse("irrigPulseChart",pulseHist);
+  refreshI18n();
 }
 
   safeRedraw();
@@ -1809,28 +1912,29 @@ function redrawAll(){
   connectMQTT();
   setTimeout(function(){var el=document.getElementById("pumpRunTime3");if(el)el.innerHTML="&#9201; "+Math.floor(runSec/60)+"m "+Math.floor(runSec%60)+"s";},500);
 
-setInterval(function(){t++;var mb=document.getElementById("mb");if(mb)mb.textContent=t;
+// 旧定时器已由 refreshTimer 替代，立即清除
+clearInterval(setInterval(function(){var _unused;
   if(connMode==="offline"&&!httpTimer){
-    setConn("offline","重连中");startHTTPFallback();connectMQTT();
+    setConn("offline",_("connectingLabel"));startHTTPFallback();connectMQTT();
   }
 
-  var activeCloud=false;
-  if(!activeCloud){
-    if(pump)hum+=(Math.random()+.5)*0.25;else hum-=(Math.random()+.15)*0.2;
+  var freshCloud=hasCloud&&(Date.now()-lastCloud<10000);
+  if(!freshCloud){
+    if(pump)hum+=Math.random()*1.2;else hum-=Math.random()*1.0;
     hum=Math.max(15,Math.min(90,hum));
-    light+=(Math.random()-0.5)*500;light=Math.max(5000,Math.min(90000,light));
-    temp+=(Math.random()-0.5)*0.2;temp=Math.max(20,Math.min(38,temp));
-    ph+=(Math.random()-0.5)*0.03;ph=Math.max(4,Math.min(11,ph));
-    salinity+=(Math.random()-0.5)*0.015;salinity=Math.max(0,Math.min(5,salinity));
-    ec+=(Math.random()-0.5)*0.04;ec=Math.max(0,Math.min(5,ec));
-    nitro+=(Math.random()-0.5)*0.15;nitro=Math.max(0,Math.min(200,nitro));
-    phos+=(Math.random()-0.5)*0.15;phos=Math.max(0,Math.min(200,phos));
-    potass+=(Math.random()-0.5)*0.15;potass=Math.max(0,Math.min(200,potass));
+    light+=(Math.random()-0.5)*1200;light=Math.max(5000,Math.min(90000,light));
+    temp+=(Math.random()-0.5)*0.5;temp=Math.max(20,Math.min(38,temp));
+    ph+=(Math.random()-0.5)*0.08;ph=Math.max(4,Math.min(11,ph));
+    salinity+=(Math.random()-0.5)*0.04;salinity=Math.max(0,Math.min(5,salinity));
+    ec+=(Math.random()-0.5)*0.08;ec=Math.max(0,Math.min(5,ec));
+    nitro+=(Math.random()-0.5)*0.4;nitro=Math.max(0,Math.min(200,nitro));
+  phos+=(Math.random()-0.5)*0.4;phos=Math.max(0,Math.min(200,phos));
+  potass+=(Math.random()-0.5)*0.4;potass=Math.max(0,Math.min(200,potass));
   }
-  bat-=(Math.random()-0.42)*0.04;bat=Math.max(10.5,Math.min(14.5,bat));
-  wind+=(Math.random()-0.5)*0.3;wind=Math.max(0,Math.min(12,wind));
+  bat-=(Math.random()-0.42)*0.06;bat=Math.max(10.5,Math.min(14.5,bat));
+  wind+=(Math.random()-0.5)*0.6;wind=Math.max(0,Math.min(12,wind));
   windHist.push(wind);if(windHist.length>20)windHist.shift();
-  if(pump){runSec+=0.5;irrigD+=Math.random()*0.005;}
+  if(pump){runSec+=0.5;irrigD=Math.round((irrigD+0.15)*10)/10;}
   if(pump){ec10-=(Math.random()*0.03+0.005);ec20-=(Math.random()*0.02+0.004);}else{ec10+=(Math.random()-0.35)*0.008;ec20+=(Math.random()-0.35)*0.006;}
   ec10=Math.max(0.3,Math.min(4.5,ec10));ec20=Math.max(0.2,Math.min(3.5,ec20));
   frontSpeed+=(Math.random()-0.48)*0.005;frontSpeed=Math.max(0.1,Math.min(0.9,frontSpeed));
@@ -1973,16 +2077,1191 @@ setInterval(function(){t++;var mb=document.getElementById("mb");if(mb)mb.textCon
   var edu=document.getElementById("enDayUse");if(edu)edu.textContent=dayUse+"kWh";
 
   var ci=document.getElementById("cIrrig");if(ci)ci.textContent=irrigD.toFixed(1)+"L";
-  var cit=document.getElementById("cIrrigTimes");if(cit)cit.textContent="累计 "+Math.floor(irrigD/40)+" 次";
-  var cid=document.getElementById("cIrrigDuration");if(cid)cid.textContent="运行 "+Math.floor(runSec/3600)+"h "+Math.floor((runSec%3600)/60)+"m";
+  var cit=document.getElementById("cIrrigTimes");if(cit)cit.textContent=_f("cumulativeXTimes",Math.floor(irrigD/40));
+  var cid=document.getElementById("cIrrigDuration");if(cid)cid.textContent=_f("runningXhXm",Math.floor(runSec/3600),Math.floor((runSec%3600)/60));
   var iq=document.getElementById("irrigQuota");if(iq)iq.textContent=Math.round(Math.min(100,irrigD/150*100))+"%";
 
   safeRedraw();
-},250);
+},250));
+// 旧定时器已清除，由 tickLoop 全权负责数据更新
 
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")safeRedraw();});
 window.addEventListener("focus",safeRedraw);
 window.addEventListener("resize",safeRedraw);
+
+// === 全局多语言翻译表 & i18n 系统 ===
+var TR=function(o){return o;}; // helper for short notation
+var i18n={
+  zh:TR({langLabel:"界面语言",loginBtn:"登录",logoutBtn:"登出",userName:"管理员",userRole:"离线模式",loginPrompt:"请输入用户名:",
+       connMQTT:"MQTT 已连接",connHTTP:"HTTP 轮询中",connOff:"离线 (模拟数据)",reconnectBtn:"重新连接",
+       settingsTitle:"设置",irrigAdvice:"建议灌溉",monitorAdvice:"监测跟进",
+       cloudFresh:"云端同步中",cloudTitle:"云端优先",
+       navDash:"旱情预警",navSoil:"墒情分析",navEnergy:"能源分析",navAdvice:"决策建议",navSettings:"设置",
+       topTitle:"逐光巡墒——智慧墒情巡检与旱情预警系统",topSub:"离网联锁 · 三层决策 · 风光互补 · 盐碱地洗盐",
+       fsSense:"传感采集",fsDemand:"需求判断",fsCheck:"条件校验",fsSafe:"安全确认",fsIrrig:"建议灌溉",
+       tagDemand:"需求层",tagCondition:"条件层",tagSafety:"安全层",
+       soilMoisture:"土壤水分",soilTemp:"土壤温度",soilEC:"电导率 EC",soilPH:"土壤pH",soilNutrients:"土壤养分",
+       dripControl:"滴灌控制",envOverview:"环境概览",powerBalance:"功率平衡",
+       energyOverview:"能源概览",energyFlow:"能源流向",energyEfficiency:"能源效率评估",
+       batteryStatus:"电池状态",solarStatus:"光伏状态",windStatus:"风力状态",
+       adviceTitle:"建议关注",adviceDecision:"决策建议",
+       irrigationRec:"灌溉建议",irrigationLog:"灌溉日志",
+       waterLevel:"水位 & 电压双轴",droughtOverview:"旱情概览",
+       badgeDry:"偏干",badgeNormal:"正常",badgeWet:"湿润",
+       statusDry:"轻度干旱",statusNormal:"适宜",statusWarn:"注意",
+       autoMode:"自动",manualMode:"手动",
+       sensorPH:"土壤pH",humLower:"旱情",humUpper:"达标",humStatus:"状态",
+       tempRange:"适温",tempComp:"补偿",tempStatus:"状态",
+       ecRange:"适宜",ecOver:"超标",ecStatus:"状态",
+       phRange:"适区",phOut:"偏碱",phStatus:"状态",
+       nitro:"氮",phos:"磷",potass:"钾",
+       light:"光照",ambTemp:"环境温度",humidity:"湿度",windSpeed:"风速",
+       solarPower:"光伏功率",loadPower:"负载功率",batteryVoltage:"电池电压",
+       yesterday:"昨日",today:"今日",forecast:"明日预测",
+       pumpRunning:"运行中",pumpStopped:"已停止",
+       decisionAllow:"建议灌溉",decisionDeny:"暂未预警",
+       adviceDesc:"湿度低于阈值，需求层触发；条件层通过，系统建议灌溉跟进。",
+       cloudUser:"用户账户",cloudLang:"语言",cloudConn:"云端连接",
+       confirm:"确定",cancel:"取消",save:"保存"}),
+  en:TR({langLabel:"Language",loginBtn:"Login",logoutBtn:"Logout",userName:"Admin",userRole:"Offline",loginPrompt:"Enter username:",
+       connMQTT:"MQTT Connected",connHTTP:"HTTP Polling",connOff:"Offline (Simulated)",reconnectBtn:"Reconnect",
+       settingsTitle:"Settings",irrigAdvice:"Irrigation Rec",monitorAdvice:"Monitor",
+       cloudFresh:"Cloud Synced",cloudTitle:"Cloud First",
+       navDash:"Drought Alert",navSoil:"Soil Analysis",navEnergy:"Energy Analysis",navAdvice:"Decision Advice",navSettings:"Settings",
+       topTitle:"LightTracker — Smart Soil Patrol & Drought Alert",topSub:"Off-grid Interlock · 3-Tier · Solar-Wind Hybrid · Saline Land",
+       fsSense:"Sensing",fsDemand:"Demand",fsCheck:"Condition",fsSafe:"Safety",fsIrrig:"Irrigation",
+       tagDemand:"Demand",tagCondition:"Condition",tagSafety:"Safety",
+       soilMoisture:"Soil Moisture",soilTemp:"Soil Temp",soilEC:"EC",soilPH:"Soil pH",soilNutrients:"Nutrients",
+       dripControl:"Drip Control",envOverview:"Environment",powerBalance:"Power Balance",
+       energyOverview:"Energy Overview",energyFlow:"Energy Flow",energyEfficiency:"Efficiency",
+       batteryStatus:"Battery",solarStatus:"Solar",windStatus:"Wind",
+       adviceTitle:"Advisory",adviceDecision:"Decision",
+       irrigationRec:"Irrigation Advice",irrigationLog:"Irrigation Log",
+       waterLevel:"Water & Voltage",droughtOverview:"Drought Overview",
+       badgeDry:"Dry",badgeNormal:"Normal",badgeWet:"Wet",
+       statusDry:"Mild Drought",statusNormal:"Normal",statusWarn:"Caution",
+       autoMode:"Auto",manualMode:"Manual",
+       sensorPH:"Soil pH",humLower:"Drought",humUpper:"Target",humStatus:"Status",
+       tempRange:"Optimal",tempComp:"Compensation",tempStatus:"Status",
+       ecRange:"Optimal",ecOver:"Excess",ecStatus:"Status",
+       phRange:"Optimal",phOut:"Alkaline",phStatus:"Status",
+       nitro:"N",phos:"P",potass:"K",
+       light:"Illuminance",ambTemp:"Air Temp",humidity:"Humidity",windSpeed:"Wind",
+       solarPower:"Solar Power",loadPower:"Load Power",batteryVoltage:"Battery",
+       yesterday:"Yesterday",today:"Today",forecast:"Forecast",
+       pumpRunning:"Running",pumpStopped:"Stopped",
+       decisionAllow:"Irrigation Advised",decisionDeny:"No Alert",
+       adviceDesc:"Humidity below threshold; demand triggered; conditions passed; monitor for irrigation.",
+       cloudUser:"Account",cloudLang:"Language",cloudConn:"Cloud Connection"}),
+  ug:TR({langLabel:"تىل",loginBtn:"كىرىش",logoutBtn:"چىقىش",userName:"باشقۇرغۇچى",userRole:"تورسىز",loginPrompt:"ئىشلەتكۈچى ئاتى:",
+       connMQTT:"MQTT ئۇلاندى",connHTTP:"HTTP سۈرۈشتە",connOff:"تورسىز (تەقلىد)",reconnectBtn:"قايتا ئۇلاش",
+       settingsTitle:"تەڭشەكلەر",irrigAdvice:"سۇغىرىش تەۋسىيە",monitorAdvice:"كۆزىتىش",
+       cloudFresh:"بۇلۇت سېنكرون",cloudTitle:"بۇلۇت ئالدى",
+       navDash:"قۇرغاقچىلىق",navSoil:"تۇپراق تەھلىل",navEnergy:"ئېنېرگىيە",navAdvice:"قارار مەسلىھەت",navSettings:"تەڭشەكلەر",
+       topTitle:"نۇر ئىزدەش — ئەقلىي تۇپراق كۆزىتىش",topSub:"تورسىز · 3 قاتلام · شامال-قۇياش · شور يەر",
+       fsSense:"سېنزور",fsDemand:"ئېھتىياج",fsCheck:"تەكشۈرۈش",fsSafe:"بىخەتەرلىك",fsIrrig:"سۇغىرىش",
+       tagDemand:"ئېھتىياج",tagCondition:"شارائىت",tagSafety:"بىخەتەرلىك",
+       soilMoisture:"تۇپراق نەملىكى",soilTemp:"تۇپراق تېمپ",soilEC:"EC",soilPH:"pH",soilNutrients:"ئوزۇق",
+       dripControl:"تېمىتىپ سۇغىرىش",envOverview:"مۇھىت",powerBalance:"قۇۋۋەت تەڭپۇڭلۇقى",
+       energyOverview:"ئېنېرگىيە",energyFlow:"ئېنېرگىيە ئېقىمى",energyEfficiency:"ئۈنۈم",
+       batteryStatus:"باتارېيە",solarStatus:"قۇياش",windStatus:"شامال",waterLevel:"سۇ & توك",droughtOverview:"قۇرغاقچىلىق",
+       badgeDry:"قۇرغاق",badgeNormal:"نورمال",badgeWet:"نەم",statusDry:"يېنىك قۇرغاقچىلىق",statusNormal:"نورمال",statusWarn:"دىققەت",
+       autoMode:"ئاپتوماتىك",manualMode:"قول",
+       sensorPH:"تۇپراق pH",humLower:"قۇرغاقچىلىق",humUpper:"نىشان",humStatus:"ھالەت",
+       tempRange:"مۇۋاپىق",tempComp:"تولۇقلاما",tempStatus:"ھالەت",
+       ecRange:"مۇۋاپىق",ecOver:"ئاشقان",ecStatus:"ھالەت",
+       phRange:"مۇۋاپىق",phOut:"ئىشقارلىق",phStatus:"ھالەت",
+       nitro:"ئازوت",phos:"فوسفور",potass:"كالىي",
+       light:"يورۇقلۇق",ambTemp:"ھاۋا تېمپ",humidity:"نەملىك",windSpeed:"شامال سۈرئىتى",
+       solarPower:"قۇياش قۇۋۋىتى",loadPower:"يۈك قۇۋۋىتى",batteryVoltage:"باتارېيە بېسىمى",
+       pumpRunning:"ئىشلەۋاتىدۇ",pumpStopped:"توختىدى",
+       decisionAllow:"سۇغىرىش تەۋسىيە",decisionDeny:"ئاگاھ يوق",
+       adviceDesc:"نەملىك چېكىدىن تۆۋەن؛ ئېھتىياج قوزغىتىلدى؛ شارائىت ئۆتتى؛ سۇغىرىشنى كۆزەت.",
+       cloudUser:"ھېساب",cloudLang:"تىل",cloudConn:"بۇلۇت"}),
+  kk:TR({langLabel:"Тіл",loginBtn:"Кіру",logoutBtn:"Шығу",userName:"Әкімші",userRole:"Офлайн",loginPrompt:"Пайдаланушы аты:",
+       connMQTT:"MQTT қосылды",connHTTP:"HTTP сұрау",connOff:"Офлайн (модель)",reconnectBtn:"Қайта қосылу",
+       settingsTitle:"Параметрлер",irrigAdvice:"Суару ұсынысы",monitorAdvice:"Бақылау",
+       cloudFresh:"Бұлт үйлесті",cloudTitle:"Бұлт бірінші",
+       navDash:"Құрғақшылық",navSoil:"Топырақ талдау",navEnergy:"Энергия",navAdvice:"Шешім кеңесі",navSettings:"Параметрлер",
+       topTitle:"Нұр іздеу — Ақылды топырақ бақылау",topSub:"Желісіз · 3 деңгей · Жел-күн · Тұзды жер",
+       fsSense:"Сенсор",fsDemand:"Қажеттілік",fsCheck:"Тексеру",fsSafe:"Қауіпсіздік",fsIrrig:"Суару",
+       tagDemand:"Қажеттілік",tagCondition:"Шарт",tagSafety:"Қауіпсіздік",
+       soilMoisture:"Топырақ ылғалдылығы",soilTemp:"Топырақ темп",soilEC:"EC",soilPH:"pH",soilNutrients:"Қорек",
+       dripControl:"Тамшылатып суару",envOverview:"Қоршаған орта",powerBalance:"Қуат теңгерімі",
+       energyOverview:"Энергия шолу",energyFlow:"Энергия ағыны",energyEfficiency:"Тиімділік",
+       batteryStatus:"Батарея",solarStatus:"Күн",windStatus:"Жел",waterLevel:"Су & Кернеу",droughtOverview:"Құрғақшылық шолу",
+       badgeDry:"Құрғақ",badgeNormal:"Қалыпты",badgeWet:"Ылғалды",statusDry:"Жеңіл құрғақшылық",statusNormal:"Қалыпты",statusWarn:"Назар",
+       autoMode:"Авто",manualMode:"Қол",
+       sensorPH:"Топырақ pH",humLower:"Құрғақшылық",humUpper:"Мақсат",humStatus:"Күй",
+       tempRange:"Оңтайлы",tempComp:"Өтемақы",tempStatus:"Күй",
+       ecRange:"Оңтайлы",ecOver:"Артық",ecStatus:"Күй",
+       phRange:"Оңтайлы",phOut:"Сілтілі",phStatus:"Күй",
+       nitro:"Азот",phos:"Фосфор",potass:"Калий",
+       light:"Жарық",ambTemp:"Ауа темп",humidity:"Ылғалдылық",windSpeed:"Жел жылдамдығы",
+       solarPower:"Күн қуаты",loadPower:"Жүктеме",batteryVoltage:"Батарея кернеуі",
+       pumpRunning:"Жұмыс істеуде",pumpStopped:"Тоқтады",
+       decisionAllow:"Суару ұсынылды",decisionDeny:"Ескерту жоқ",
+       adviceDesc:"Ылғалдылық шектен төмен; қажеттілік іске қосылды; шарттар орындалды; суаруды бақыла.",
+       cloudUser:"Аккаунт",cloudLang:"Тіл",cloudConn:"Бұлт"}),
+  ky:TR({langLabel:"Тил",loginBtn:"Кирүү",logoutBtn:"Чыгуу",userName:"Админ",userRole:"Оффлайн",loginPrompt:"Колдонуучу аты:",
+       connMQTT:"MQTT туташты",connHTTP:"HTTP сурам",connOff:"Оффлайн (модел)",reconnectBtn:"Кайра туташуу",
+       settingsTitle:"Орнотуулар",irrigAdvice:"Сугаруу сунушу",monitorAdvice:"Көзөмөл",
+       cloudFresh:"Булут шайкеш",cloudTitle:"Булут биринчи",
+       navDash:"Кургакчылык",navSoil:"Топурак талдоо",navEnergy:"Энергия",navAdvice:"Чечим кеңеши",navSettings:"Орнотуулар",
+       topTitle:"Нур издөө — Акылдуу топурак көзөмөлү",topSub:"Тармаксыз · 3 катмар · Шамал-күн · Туздуу жер",
+       fsSense:"Сенсор",fsDemand:"Муктаждык",fsCheck:"Текшерүү",fsSafe:"Коопсуздук",fsIrrig:"Сугаруу",
+       tagDemand:"Муктаждык",tagCondition:"Шарт",tagSafety:"Коопсуздук",
+       soilMoisture:"Топурак нымдуулугу",soilTemp:"Топурак темп",soilEC:"EC",soilPH:"pH",soilNutrients:"Азык",
+       dripControl:"Тамчылатып сугаруу",envOverview:"Айлана-чөйрө",powerBalance:"Кубат теңдемеси",
+       energyOverview:"Энергия сереп",energyFlow:"Энергия агымы",energyEfficiency:"Натыйжалуулук",
+       batteryStatus:"Батарея",solarStatus:"Күн",windStatus:"Шамал",waterLevel:"Суу & Чыңалуу",droughtOverview:"Кургакчылык сереп",
+       badgeDry:"Кургак",badgeNormal:"Кадимки",badgeWet:"Нымдуу",statusDry:"Жеңил кургакчылык",statusNormal:"Кадимки",statusWarn:"Көңүл",
+       autoMode:"Авто",manualMode:"Кол",
+       sensorPH:"Топурак pH",humLower:"Кургакчылык",humUpper:"Максат",humStatus:"Абал",
+       tempRange:"Ыңгайлуу",tempComp:"Компенсация",tempStatus:"Абал",
+       ecRange:"Ыңгайлуу",ecOver:"Ашкан",ecStatus:"Абал",
+       phRange:"Ыңгайлуу",phOut:"Жегич",phStatus:"Абал",
+       nitro:"Азот",phos:"Фосфор",potass:"Калий",
+       light:"Жарык",ambTemp:"Аба темп",humidity:"Нымдуулук",windSpeed:"Шамал ылдамдыгы",
+       solarPower:"Күн кубаты",loadPower:"Жүктөмө",batteryVoltage:"Батарея чыңалуусу",
+       pumpRunning:"Иштеп жатат",pumpStopped:"Токтоду",
+       decisionAllow:"Сугаруу сунушталды",decisionDeny:"Эскертүү жок",
+       adviceDesc:"Нымдуулук чектен төмөн; муктаждык козголду; шарттар аткарылды; сугарууну көзөмөлдө.",
+       cloudUser:"Аккаунт",cloudLang:"Тил",cloudConn:"Булут"}),
+  mn:TR({langLabel:"ᠬᠡᠯᠡ",loginBtn:"ᠨᠡᠪᠲᠡᠷᠡᠬᠦ",logoutBtn:"ᠭᠠᠷᠬᠤ",userName:"ᠠᠳᠮᠢᠨ",userRole:"ᠰᠦᠯᠵᠢᠶᠡ ᠦᠭᠡᠢ",loginPrompt:"ᠬᠡᠷᠡᠭᠯᠡᠭᠴᠢ ᠨᠡᠷᠡ:",
+       connMQTT:"MQTT ᠬᠣᠯᠪᠣᠭᠳᠠᠪᠠ",connHTTP:"HTTP ᠠᠰᠠᠭᠣᠯᠲᠠ",connOff:"ᠰᠦᠯᠵᠢᠶᠡ ᠦᠭᠡᠢ (ᠲᠠᠭᠠᠳᠬᠠᠯ)",reconnectBtn:"ᠳᠠᠬᠢᠨ ᠬᠣᠯᠪᠣᠬᠣ",
+       settingsTitle:"ᠲᠣᠬᠢᠷᠠᠭᠠ",irrigAdvice:"ᠣᠰᠣᠯᠠᠯᠲᠠ ᠰᠠᠨᠠᠯ",monitorAdvice:"ᠬᠢᠨᠠᠯᠲᠠ",
+       cloudFresh:"ᠡᠭᠦᠯᠡ ᠲᠡᠩᠴᠡᠯᠡ",cloudTitle:"ᠡᠭᠦᠯᠡ ᠲᠡᠷᠢᠭᠦᠨ",
+       navDash:"ᠭᠠᠩ ᠤᠨ ᠰᠡᠷᠡᠮᠵᠢ",navSoil:"ᠰᠢᠷᠤᠢ ᠰᠢᠨᠵᠢᠯᠡᠯ",navEnergy:"ᠡᠷᠴᠢᠮ",navAdvice:"ᠰᠢᠢᠳᠪᠦᠷᠢ ᠵᠦᠪᠰᠢᠯ",navSettings:"ᠲᠣᠬᠢᠷᠠᠭᠠ",
+       topTitle:"ᠭᠡᠷᠡᠯ ᠡᠷᠢᠬᠦ — ᠤᠬᠠᠭᠠᠨᠲᠤ ᠰᠢᠷᠤᠢ ᠬᠢᠨᠠᠯᠲᠠ",topSub:"ᠰᠦᠯᠵᠢᠶᠡ ᠦᠭᠡᠢ · 3 ᠳᠠᠪᠬᠠᠷᠭᠠ · ᠰᠠᠯᠬᠢ-ᠨᠠᠷᠠ · ᠬᠤᠵᠢᠷ ᠭᠠᠵᠠᠷ",
+       fsSense:"ᠮᠡᠳᠡᠷᠡᠭᠴᠢ",fsDemand:"ᠬᠡᠷᠡᠭᠴᠡ",fsCheck:"ᠰᠢᠯᠭᠠᠯᠲᠠ",fsSafe:"ᠠᠶᠤᠯ ᠦᠭᠡᠢ",fsIrrig:"ᠤᠰᠣᠯᠠᠯᠲᠠ",
+       tagDemand:"ᠬᠡᠷᠡᠭᠴᠡ",tagCondition:"ᠨᠥᠬᠥᠴᠡᠯ",tagSafety:"ᠠᠶᠤᠯ ᠦᠭᠡᠢ",
+       soilMoisture:"ᠰᠢᠷᠤᠢ ᠴᠢᠨᠢᠭ",soilTemp:"ᠰᠢᠷᠤᠢ ᠲᠡᠮᠫ",soilEC:"EC",soilPH:"pH",soilNutrients:"ᠲᠡᠵᠢᠶᠡᠯ",
+       dripControl:"ᠳᠤᠰᠠᠯᠭᠠ ᠤᠰᠣᠯᠠᠯᠲᠠ",envOverview:"ᠣᠷᠴᠢᠨ",powerBalance:"ᠴᠢᠳᠠᠯ ᠲᠡᠨᠴᠡᠯ",
+       energyOverview:"ᠡᠷᠴᠢᠮ ᠬᠠᠷᠠᠭᠳᠠᠮᠵᠢ",energyFlow:"ᠡᠷᠴᠢᠮ ᠤᠷᠤᠰᠬᠠᠯ",energyEfficiency:"ᠦᠢᠯᠡ ᠦᠷᠡ",
+       batteryStatus:"ᠪᠠᠲ᠋ᠲ᠋ᠠᠷᠧ",solarStatus:"ᠨᠠᠷᠠ",windStatus:"ᠰᠠᠯᠬᠢ",waterLevel:"ᠤᠰᠤ & ᠬᠦᠴᠦᠳᠡᠯ",droughtOverview:"ᠭᠠᠩ ᠬᠠᠷᠠᠭᠳᠠᠮᠵᠢ",
+       badgeDry:"ᠬᠠᠲᠠᠭᠤ",badgeNormal:"ᠬᠡᠪ ᠢᠶᠡᠨ",badgeWet:"ᠨᠣᠢᠲᠠᠨ",statusDry:"ᠬᠥᠩᠭᠡᠨ ᠭᠠᠩ",statusNormal:"ᠬᠡᠪ ᠢᠶᠡᠨ",statusWarn:"ᠠᠩᠬᠠᠷ",
+       autoMode:"ᠠᠦ᠋ᠲ᠋ᠣ",manualMode:"ᠭᠠᠷ",
+       sensorPH:"ᠰᠢᠷᠤᠢ pH",humLower:"ᠭᠠᠩ",humUpper:"ᠵᠣᠷᠢᠯᠲᠠ",humStatus:"ᠪᠠᠢᠳᠠᠯ",
+       tempRange:"ᠲᠣᠬᠢᠷᠠᠮᠵᠢᠲᠠᠢ",tempComp:"ᠨᠥᠬᠥᠪᠦᠷᠢ",tempStatus:"ᠪᠠᠢᠳᠠᠯ",
+       ecRange:"ᠲᠣᠬᠢᠷᠠᠮᠵᠢᠲᠠᠢ",ecOver:"ᠢᠯᠡᠭᠦᠳᠡᠯ",ecStatus:"ᠪᠠᠢᠳᠠᠯ",
+       phRange:"ᠲᠣᠬᠢᠷᠠᠮᠵᠢᠲᠠᠢ",phOut:"ᠱᠦᠯᠲᠦ",phStatus:"ᠪᠠᠢᠳᠠᠯ",
+       nitro:"ᠠᠽᠣᠲ",phos:"ᠹᠣᠰᠹᠣᠷ",potass:"ᠺᠠᠯᠢ",
+       light:"ᠭᠡᠷᠡᠯ",ambTemp:"ᠠᠭᠠᠷ ᠲᠡᠮᠫ",humidity:"ᠴᠢᠨᠢᠭ",windSpeed:"ᠰᠠᠯᠬᠢ ᠬᠤᠷᠳᠤ",
+       solarPower:"ᠨᠠᠷᠠ ᠴᠢᠳᠠᠯ",loadPower:"ᠠᠴᠠᠯ ᠴᠢᠳᠠᠯ",batteryVoltage:"ᠪᠠᠲ᠋ᠲ᠋ᠠᠷᠧ ᠬᠦᠴᠦᠳᠡᠯ",
+       pumpRunning:"ᠠᠵᠢᠯᠯᠠᠵᠤ ᠪᠠᠢᠨᠠ",pumpStopped:"ᠵᠣᠭᠰᠣᠪᠠ",
+       decisionAllow:"ᠤᠰᠣᠯᠠᠯᠲᠠ ᠵᠦᠪᠰᠢᠯ",decisionDeny:"ᠰᠡᠷᠡᠮᠵᠢ ᠦᠭᠡᠢ",
+       adviceDesc:"ᠴᠢᠨᠢᠭ ᠬᠡᠮᠵᠢᠶᠡ ᠡᠴᠡ ᠳᠣᠭᠣᠷᠠ；ᠬᠡᠷᠡᠭᠴᠡ ᠶᠡ ᠡᠭᠦᠰᠭᠡᠪᠡ；ᠨᠥᠬᠥᠴᠡᠯ ᠪᠢᠡᠯᠡᠪᠡ；ᠤᠰᠣᠯᠠᠯᠲᠠ ᠬᠢᠨᠠ᠃",
+       cloudUser:"ᠳᠠᠨᠰᠠ",cloudLang:"ᠬᠡᠯᠡ",cloudConn:"ᠡᠭᠦᠯᠡ"}),
+  bo:TR({langLabel:"སྐད་ཡིག",loginBtn:"ནང་འཛུལ།",logoutBtn:"ཕྱིར་འབུད།",userName:"འགོ་སྐྱོང་པ།",userRole:"དྲ་རྒྱ་མེད་པ།",loginPrompt:"མིང་འཛུལ་རོགས།:",
+       connMQTT:"MQTT མཐུད་ཡོད།",connHTTP:"HTTP འདྲི་རྩད།",connOff:"དྲ་རྒྱ་མེད། (ཚོད་བརྟག)",reconnectBtn:"བསྐྱར་སྦྲེལ།",
+       settingsTitle:"སྒྲིག་སྟངས།",irrigAdvice:"ཆུ་གཏོང་དགོས་པའི་འབོད་སྐུལ།",monitorAdvice:"ལྟ་ཞིབ།",
+       cloudFresh:"སྤྲིན་མཉམ་བསྒྲིགས།",cloudTitle:"སྤྲིན་སྔོན་ལ།",
+       navDash:"ཐན་སྐམ་ཉེན་བརྡ།",navSoil:"ས་ཞིང་དབྱེ་ཞིབ།",navEnergy:"ནུས་པ།",navAdvice:"ཐག་གཅོད་སློབ་སྟོན།",navSettings:"སྒྲིག་སྟངས།",
+       topTitle:"འོད་འཚོལ་ས་གཡོག་— རིག་ནུས་ས་ཞིང་ལྟ་ཞིབ།",topSub:"དྲ་རྒྱ་མེད་རྒྱུད་སྦྲེལ། · རིམ་པ་གསུམ། · རླུང་ཉི་མ་ལྷན་སྦྲེལ། · ཚྭ་ས།",
+       fsSense:"ཚོར་འཁོར།",fsDemand:"དགོས་མཁོ།",fsCheck:"ཞིབ་བཤེར།",fsSafe:"བདེ་འཇགས།",fsIrrig:"ཆུ་གཏོང་།",
+       tagDemand:"དགོས་མཁོ།",tagCondition:"ཆ་རྐྱེན།",tagSafety:"བདེ་འཇགས།",
+       soilMoisture:"ས་གཤོང་།",soilTemp:"ས་ཁོད།",soilEC:"EC",soilPH:"pH",soilNutrients:"རྒྱུ་ཆ།",
+       dripControl:"ཟེགས་མ་ཆུ་གཏོང་།",envOverview:"གནས་སྟངས།",powerBalance:"ནུས་པའི་སྙོམས་སྒྲིག",
+       energyOverview:"ནུས་པའི་གནས་ཚུལ།",energyFlow:"ནུས་པའི་རྒྱུན།",energyEfficiency:"ནུས་ཚད།",
+       batteryStatus:"གློག་སྨན།",solarStatus:"ཉི་གློག",windStatus:"རླུང་ནུས།",waterLevel:"ཆུ་འབོར་དང་གློག་བཅས།",droughtOverview:"ཐན་སྐམ་གནས་ཚུལ།",
+       badgeDry:"སྐམ་པོ།",badgeNormal:"རྒྱུན་ལྡན།",badgeWet:"རློན་པ།",statusDry:"ཧ་ཅང་སྐམ་པ།",statusNormal:"རྒྱུན་ལྡན།",statusWarn:"དོ་སྣང་།",
+       autoMode:"རང་འགུལ།",manualMode:"ལག་བཀོལ།",
+       sensorPH:"ས་ཞིང་ pH",humLower:"ཐན་སྐམ།",humUpper:"དམིགས་འབེན།",humStatus:"གནས་སྟངས།",
+       tempRange:"འོས་འཚམས།",tempComp:"གྱང་སྐྱོང་།",tempStatus:"གནས་སྟངས།",
+       ecRange:"འོས་འཚམས།",ecOver:"བརྒལ་ཡོད།",ecStatus:"གནས་སྟངས།",
+       phRange:"འོས་འཚམས།",phOut:"བུལ་ཚ།",phStatus:"གནས་སྟངས།",
+       nitro:"ཚྭ་མིན།",phos:"ཕོས་ཕོར།",potass:"པོ་ཊཱ་ཤིམ།",
+       light:"འོད་སྣང་།",ambTemp:"གནམ་གཤིས་དྲོད་ཚད།",humidity:"རླན་ཚད།",windSpeed:"རླུང་གི་མྱུར་ཚད།",
+       solarPower:"ཉི་གློག་ནུས་པ།",loadPower:"ཁུར་ནུས་པ།",batteryVoltage:"གློག་སྨན་ཁུར་ཚད།",
+       pumpRunning:"བཀོལ་སྤྱོད་བཞིན་པ།",pumpStopped:"བཀག་ཡོད།",
+       decisionAllow:"ཆུ་གཏོང་བྱེད་རོགས།",decisionDeny:"ཉེན་བརྡ་མེད།",
+       adviceDesc:"རླན་ཚད་མཐའ་མིན་ལས་དམའ་བ། དགོས་མཁོ་བསྐུལ་འདེད། ཆ་རྐྱེན་ཚང་བ། ཆུ་གཏོང་ལ་ལྟ་ཞིབ་བྱོས།",
+       cloudUser:"ཐོ།",cloudLang:"སྐད་ཡིག",cloudConn:"སྤྲིན།"})
+};
+
+// === i18n 扩展：补齐所有卡片标题/标签/内容翻译 ===
+var i18nExtra = {
+  zh: {
+    // Panel 2: 墒情分析面板
+    curHumidity:"当前湿度",maxMin:"最高 / 最低",avgHumidity:"平均湿度",passRate:"达标率",
+    humidityCurve:"土壤湿度详细曲线（近2小时）",line35:"35%启动线",line70:"70%停止线",realTime:"实时数据",
+    soilEC10:"土壤EC 10cm",soilEC20:"土壤EC 20cm",wetFront:"湿润锋推进",
+    targetDsm:"dS/m（目标 < 2.0）",phaseInfo:"阶段:",
+    ecCompare:"EC 分层对比趋势 (10cm / 20cm)",recent10m:"近10分钟",alert4:"警戒 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    soilHumCurve:"土壤湿度详细曲线",timeAbove35:"≥35% 时间占比",recent1h:"近1小时",
+    // Panel 3: 能源分析面板
+    solarGen:"光伏发电",windGen:"风力发电",todayGen:"今日发电",todayUse:"今日用电",
+    minVoltage:"最低电压",batterySOC:"蓄电池 SOC",recent24h:"近24h",recent5m:"近5分钟",
+    batteryDischarge:"电池放电曲线",solarVsLoad:"光伏 vs 负荷对比",energyTimeline:"能源收支时序",
+    estimated:"估算",solarShort:"光伏",loadShort:"负荷",netSurplus:"净盈余",
+    voltageLabel:"电压",undervoltLine:"欠压 11.5V",lightLux:"光照 45k lux",windMs:"风速 2.8 m/s",
+    sysRunning:"系统运行",solarRatio:"光伏占比",
+    // Panel 4: 控制与报警面板
+    droughtThreshold:"旱情阈值设置",safetyParam:"安全参数",todayStats:"今日监测统计",
+    pumpConsole:"水泵控制台",eventLog:"完整事件日志",
+    startLabel:"启动",stopLabel:"停止",timeoutLabel:"超时",
+    undervoltage:"欠压",lowWaterLevel:"低水位",ecLimit:"EC上限",
+    cumulative:"累计",timesUnit:"次",runningLabel:"运行",
+    autoPump:"自动",manualPump:"手动",modeColon:"模式:",pumpColon:"水泵:",
+    allFilter:"全部",warnFilter:"⚠ 警告",faultFilter:"● 故障",infoFilter:"ℹ 信息",
+    decisionLabel:"决策",demandLabel:"需求",conditionLabel:"条件",
+    // Panel 5: 智能决策面板
+    smartDecision:"智能决策引擎",paramAdvice:"参数建议与工程判据",
+    curWashStage:"当前洗盐工艺阶段",mainWash:"主洗盐",
+    washStart:"洗盐阈值（启动）",washStop:"达标阈值（停止）",
+    ecTempCoeff:"EC温度补偿系数",ec10cmCur:"EC 10cm当前值",ec20cmCur:"EC 20cm当前值",
+    irrigQuotaRate:"灌水定额完成率",
+    fiveStateWash:"五态洗盐工艺状态流转（ESP32状态机）",
+    initWet:"INIT 润湿",wetForm:"WET 锋形成",leachMain:"LEACH 主洗盐",
+    flushRinse:"FLUSH 冲淋",completeState:"COMPLETE 完成",
+    abExperiment:"A/B对照实验：自适应 vs 恒定滴灌",
+    constDrip:"A组 恒定滴灌",adaptiveDrip:"B组 自适应滴灌",estimatedSaving:"预估节水率",
+    deviceSpecs:"设备规格与率定参数",
+    mainControl:"主控",vision:"视觉",kclCal:"KCl率定",
+    r2Reliability:"R²可信度",tempCompensation:"温度补偿",totalBOM:"整机BOM",
+    // Dashboard 面板
+    lockDecision:"三层联锁决策",monitorStatus:"监测状态",
+    todayIrrigation:"今日灌水量",monitorCount:"监测次数 / 运行",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"湿润锋 / 阶段",
+    irrigQuotaIn:"灌水定额:",waterReserve:"蓄水余量:",
+    demandLayer:"需求层 — 土壤湿度阈值",condLayer:"条件层 — 水位与电压",
+    safetyLayer:"安全层 — 超时保护",
+    // 通用标签
+    pumpAbnormal:"异常",clearWeather:"晴天",normalSys:"正常",
+    irrigRunning:"灌溉中",dripStatus:"滴灌状态",
+    lowPriority:"低优先级",needFollow:"需关注",
+    // 水资源
+    waterLevelShort:"水位",voltage:"电压",runTime:"运行",runWater:"水泵",
+    actionCheckSensor:"检查传感器连接状态",actionCheckWater:"确认水源与管路正常",
+    actioNMonitorTrend:"持续监测并分析墒情趋势湿度回升",actioNMonitorHum:"监测湿度变化趋势",
+    actionContinuePatrol:"继续巡检监测",actionCheckRefill:"检查水源，补充水位",
+    actionChargeWait:"补电或等待风光恢复",actionWaitInterval:"等待安全间歇期结束",
+    actionLockPass:"三层联锁通过",actioNEnergyNormal:"风光互补供能正常",actionMonitorFollow:"可监测跟进",
+    // --- 决策引擎动态文本 ---
+    reachedTarget:"已达标",pumpStoppedTarget:"达标停机",lowWaterLocked:"低水位锁定",undervoltLocked:"欠压锁定",timeoutLocked:"超时锁定",
+    autoMonitoring:"自动监测中",autoMonitorStarted:"自动监测启动",lowWaterForbidden:"低水位禁止",undervoltForbidden:"欠压禁止",timeoutForbidden:"超时禁止",
+    manualRunning:"手动运行",manualStopped:"手动停止",alreadyStopStatus:"已停止",runningStatus:"运行中",lockedStatus:"锁定",standbyStatus:"待机",
+    pumpRun:"运行",pumpStop:"停止",
+    voltageNormal:"电压正常",allowDecision:"允许",forbidDecision:"禁止",autoInterlock:"自动联锁",manualControlDesc:"手动控制",
+    needAttention:"需关注",notMetCond:"不满足",waterVoltNormal:"水位/电压正常",conditionInsufficient:"条件不足",
+    adviseAttention:"建议关注",adviseNotAttention:"暂不建议关注",
+    solarWindNormal:"风光互补供能正常",canMonitorFollow:"可监测跟进",highPriority:"高优先级",
+    humReachedOptimal:"湿度已达适宜范围",humNotThreshold:"湿度未达阈值",undervoltBlocked:"欠压闭锁",safetyInterval:"安全间歇",
+    completed:"已完成",postponed:"暂缓",monitorNormalStandby:"监测正常，待机观察",noAlertContinueWatch:"暂未预警，持续观察",
+    voltageConditionMet:"电压满足执行条件",voltageLow:"电压偏低",alreadyLocked:"已闭锁",notLocked:"未闭锁",
+    timeoutProtectionTriggered:"超时保护触发",inDroughtAlertWindow:"处于旱情预警建议窗口",
+    trendDown:"下降 ▼",trendUp:"上升 ▲",trendFlat:"持平 →",
+    severeDrought:"严重干旱",moderateDrought:"中度干旱",mildDry:"轻度偏干",
+    energyNormalMsg:"风光互补正常，电量充足，可持续巡检。",energyLowMsg:"电量偏低，阴雨时降低刷新频率至5s。",energyCritMsg:"电量不足，建议立即补电。",
+    range3Days:"≥3日",range1Day:"≥1日",range12Hours:"<12小时",connectingLabel:"重连中",
+    belowFieldCapCond:"当前墒情低于田持60%，满足灌溉条件",
+    humAboveThresh:"湿度≥{0}% 待机",humBelowThreshAlert:"低于旱情阈值{0}%，触发旱情预警",
+    humNotBelowThresh:"未低于阈值{0}%，不触发",humReachedPct:"已达标({0}%)",
+    irrigRunningWithPct:"灌溉进行中(hum≤{0}%)",humExceedsTS:"湿度{0}% ≥ {1}%",
+    reachedStopThresh:"已达{0}%停止阈值",interceptCount:"当前存在{0}项拦截条件，系统已暂缓灌溉建议。",
+    descReachStopDone:"当前湿度已达到{0}%停止阈值，灌溉正常完成，系统自动停机待命。",
+    descReachStopMonitor:"湿度已达到{0}%停止阈值，本次数据采集完成。系统将继续监测墒情变化。",
+    descBelowFieldCapFull:"当前墒情低于田持60%，满足灌溉条件，三层联锁均通过，建议启动灌溉。",
+    descInterceptList:"系统检测到以下拦截条件，请逐一排查后再监测跟进：",
+    cumulativeXTimes:"累计 {0} 次",runningXhXm:"运行 {0}h {1}m",
+    adviseIrrigateLabel:"建议灌溉",noAlertShort:"暂未预警",waterInsufficient:"水位不足",
+    adviseMonitorFollowLabel:"建议监测跟进",humidityShort:"湿度",
+    advDescBelowThresh:"土壤湿度{0}%低于旱情阈值{1}%，建议持续监测关注；电池电压{2}V正常。",
+    settingsSysInfo:"系统信息",settingsNotify:"通知设置",restoreDefaults:"恢复默认",
+    actCheckSensorShort:"检查传感器连接状态",actCheckWaterShort:"确认水源与管路正常",
+    actMonitorTrendShort:"持续监测并分析墒情趋势湿度回升",
+    droughtNotify:"旱情预警通知",voltAnomalyNotify:"电压异常通知",ecExceedNotify:"EC 超标通知",cloudDisconNotify:"云端断连通知",
+    sysVersionLabel:"系统版本",sysModeLabel:"运行模式",sysUptimeLabel:"运行时长",deviceIdLabel:"设备 ID",
+    systemInfoTagline:"逐光巡墒 —— 智慧墒情巡检与旱情预警系统"
+  },
+  en: {
+    curHumidity:"Current Humidity",maxMin:"Max / Min",avgHumidity:"Avg Humidity",passRate:"Pass Rate",
+    humidityCurve:"Soil Moisture Curve (2h)",line35:"35% Start Line",line70:"70% Stop Line",realTime:"Real-time",
+    soilEC10:"Soil EC 10cm",soilEC20:"Soil EC 20cm",wetFront:"Wetting Front",
+    targetDsm:"dS/m (Target < 2.0)",phaseInfo:"Phase:",
+    ecCompare:"EC Layered Trend (10cm / 20cm)",recent10m:"Recent 10min",alert4:"Alert 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    soilHumCurve:"Soil Moisture Curve",timeAbove35:"≥35% Time Share",recent1h:"Recent 1h",
+    solarGen:"Solar Generation",windGen:"Wind Generation",todayGen:"Today Generation",todayUse:"Today Usage",
+    minVoltage:"Min Voltage",batterySOC:"Battery SOC",recent24h:"Recent 24h",recent5m:"Recent 5min",
+    batteryDischarge:"Battery Discharge Curve",solarVsLoad:"Solar vs Load",energyTimeline:"Energy Timeline",
+    estimated:"Estimated",solarShort:"Solar",loadShort:"Load",netSurplus:"Net Surplus",
+    voltageLabel:"Voltage",undervoltLine:"Undervolt 11.5V",lightLux:"Light 45k lux",windMs:"Wind 2.8 m/s",
+    sysRunning:"System Running",solarRatio:"Solar Share",
+    droughtThreshold:"Drought Threshold",safetyParam:"Safety Parameters",todayStats:"Today Statistics",
+    pumpConsole:"Pump Console",eventLog:"Event Log",
+    startLabel:"Start",stopLabel:"Stop",timeoutLabel:"Timeout",
+    undervoltage:"Undervoltage",lowWaterLevel:"Low Water",ecLimit:"EC Limit",
+    cumulative:"Total",timesUnit:"times",runningLabel:"running",
+    autoPump:"Auto",manualPump:"Manual",modeColon:"Mode:",pumpColon:"Pump:",
+    allFilter:"All",warnFilter:"Warn",faultFilter:"Fault",infoFilter:"Info",
+    decisionLabel:"Decision",demandLabel:"Demand",conditionLabel:"Condition",
+    smartDecision:"Smart Decision Engine",paramAdvice:"Parameter Advice & Criteria",
+    curWashStage:"Current Wash Stage",mainWash:"Main Wash",
+    washStart:"Wash Threshold (Start)",washStop:"Target Threshold (Stop)",
+    ecTempCoeff:"EC Temp Coefficient",ec10cmCur:"EC 10cm Current",ec20cmCur:"EC 20cm Current",
+    irrigQuotaRate:"Irrigation Quota Rate",
+    fiveStateWash:"Five-State Wash Process (ESP32 State Machine)",
+    initWet:"INIT Wetting",wetForm:"WET Front Formation",leachMain:"LEACH Main Wash",
+    flushRinse:"FLUSH Rinse",completeState:"COMPLETE",
+    abExperiment:"A/B Comparison: Adaptive vs Constant Drip",
+    constDrip:"Group A Constant Drip",adaptiveDrip:"Group B Adaptive Drip",estimatedSaving:"Estimated Water Saving",
+    deviceSpecs:"Device Specifications & Calibration",
+    mainControl:"Main Controller",vision:"Vision",kclCal:"KCl Calibration",
+    r2Reliability:"R² Reliability",tempCompensation:"Temp Compensation",totalBOM:"Total BOM",
+    lockDecision:"Triple Interlock Decision",monitorStatus:"Monitor Status",
+    todayIrrigation:"Today Irrigation",monitorCount:"Monitor Count / Runtime",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"Front / Phase",
+    irrigQuotaIn:"Irrig Quota:",waterReserve:"Water Reserve:",
+    demandLayer:"Demand Layer — Soil Moisture Threshold",condLayer:"Condition Layer — Water & Voltage",
+    safetyLayer:"Safety Layer — Timeout Protection",
+    pumpAbnormal:"Abnormal",clearWeather:"Clear",normalSys:"Normal",
+    irrigRunning:"Irrigating",dripStatus:"Drip Status",
+    lowPriority:"Low Priority",needFollow:"Follow Up",
+    waterLevelShort:"Water Level",voltage:"Voltage",runTime:"Runtime",runWater:"Pump",
+    actionCheckSensor:"Check sensor connections",actionCheckWater:"Verify water source & pipes",
+    actioNMonitorTrend:"Monitor & analyze soil moisture trends",actioNMonitorHum:"Monitor humidity changes",
+    actionContinuePatrol:"Continue patrol monitoring",actionCheckRefill:"Check water source, refill",
+    actionChargeWait:"Recharge or wait for power",actionWaitInterval:"Wait for safety interval",
+    actionLockPass:"Interlock passed",actioNEnergyNormal:"Solar-wind power normal",actionMonitorFollow:"Monitor follow-up",
+    // --- decision engine dynamic ---
+    reachedTarget:"Target Met",pumpStoppedTarget:"Pump Stop (Target)",lowWaterLocked:"Low Water Locked",undervoltLocked:"Undervolt Locked",timeoutLocked:"Timeout Locked",
+    autoMonitoring:"Auto Monitoring",autoMonitorStarted:"Auto Monitor Active",lowWaterForbidden:"Low Water Blocked",undervoltForbidden:"Undervolt Blocked",timeoutForbidden:"Timeout Blocked",
+    manualRunning:"Manual Running",manualStopped:"Manual Stopped",alreadyStopStatus:"Stopped",runningStatus:"Running",lockedStatus:"Locked",standbyStatus:"Standby",
+    pumpRun:"Run",pumpStop:"Stop",
+    voltageNormal:"Voltage OK",allowDecision:"Allowed",forbidDecision:"Blocked",autoInterlock:"Auto Interlock",manualControlDesc:"Manual Control",
+    needAttention:"Attention",notMetCond:"Not Met",waterVoltNormal:"Water/Volt OK",conditionInsufficient:"Insufficient",
+    adviseAttention:"Attention Advised",adviseNotAttention:"No Attention",
+    solarWindNormal:"Solar-Wind Hybrid OK",canMonitorFollow:"Monitor OK",highPriority:"High Priority",
+    humReachedOptimal:"Humidity Optimal",humNotThreshold:"Below Threshold",undervoltBlocked:"Undervolt Blocked",safetyInterval:"Safety Interval",
+    completed:"Done",postponed:"Postponed",monitorNormalStandby:"Normal, Standby",noAlertContinueWatch:"No Alert, Watching",
+    voltageConditionMet:"Voltage OK",voltageLow:"Voltage Low",alreadyLocked:"Locked",notLocked:"Unlocked",
+    timeoutProtectionTriggered:"Timeout Triggered",inDroughtAlertWindow:"Drought Alert Window",
+    trendDown:"Falling ▼",trendUp:"Rising ▲",trendFlat:"Stable →",
+    severeDrought:"Severe Drought",moderateDrought:"Moderate Drought",mildDry:"Slightly Dry",
+    energyNormalMsg:"Solar-wind normal, battery full. Can patrol.","energyLowMsg":"Battery low, reduce refresh to 5s in rain.","energyCritMsg":"Battery critical, recharge ASAP.",
+    range3Days:"≥3 days",range1Day:"≥1 day",range12Hours:"<12 h",connectingLabel:"Reconnecting",
+    belowFieldCapCond:"Soil below FC 60%, irrigation condition met",
+    humAboveThresh:"Humidity ≥{0}% Standby",humBelowThreshAlert:"Below drought threshold {0}%, alert triggered",
+    humNotBelowThresh:"Not below threshold {0}%, no trigger",humReachedPct:"Target Met ({0}%)",
+    irrigRunningWithPct:"Irrigating (hum≤{0}%)",humExceedsTS:"Humidity {0}% ≥ {1}%",
+    reachedStopThresh:"Reached {0}% stop threshold",interceptCount:"{0} active interlocks, irrigation postponed.",
+    descReachStopDone:"Humidity reached {0}% stop, irrigation done, system standby.",
+    descReachStopMonitor:"Humidity reached {0}% stop, data done. Continuing monitoring.",
+    descBelowFieldCapFull:"Below FC 60%, all 3 locks passed, irrigation advised.",
+    descInterceptList:"System detected interlocks, check each:",
+    cumulativeXTimes:"Total {0} times",runningXhXm:"Running {0}h {1}m",
+    adviseIrrigateLabel:"Irrigate",noAlertShort:"No Alert",waterInsufficient:"Water Low",
+    adviseMonitorFollowLabel:"Monitor Advised",humidityShort:"Hum.",
+    advDescBelowThresh:"Soil moisture {0}% below drought threshold {1}%, continue monitoring; battery {2}V OK.",
+    settingsSysInfo:"System Info",settingsNotify:"Notifications",restoreDefaults:"Restore Defaults",
+    actCheckSensorShort:"Check sensor connections",actCheckWaterShort:"Verify water source & pipes",
+    actMonitorTrendShort:"Monitor soil moisture trends",
+    droughtNotify:"Drought Alert Notification",voltAnomalyNotify:"Voltage Anomaly Notification",ecExceedNotify:"EC Exceeded Notification",cloudDisconNotify:"Cloud Offline Notification",
+    sysVersionLabel:"System Version",sysModeLabel:"Operating Mode",sysUptimeLabel:"Uptime",deviceIdLabel:"Device ID",
+    systemInfoTagline:"LightChaser Soil Patrol — Smart Soil Inspection & Drought Warning System"
+  },
+  ug: {
+    curHumidity:"نۆۋەتتىكى نەملىك",maxMin:"ئەڭ يۇقىرى / ئەڭ تۆۋەن",avgHumidity:"ئوتتۇرىچە نەملىك",passRate:"ئۆلچەمگە يېتىش نىسبىتى",
+    humidityCurve:"تۇپراق نەملىك ئەگرى سىزىقى (2 سائەت)",line35:"%35 باشلاش سىزىقى",line70:"%70 توختاش سىزىقى",realTime:"ھەقىقىي ۋاقىت",
+    soilEC10:"تۇپراق EC 10cm",soilEC20:"تۇپراق EC 20cm",wetFront:"نەملىك ئالدى سېپى",
+    targetDsm:"dS/m (نىشان < 2.0)",phaseInfo:"باسقۇچ:",
+    ecCompare:"EC قاتلام سېلىشتۇرۇش",recent10m:"يېقىنقى 10 مىنۇت",alert4:"ئاگاھ 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    timeAbove35:"≥%35 ۋاقىت نىسبىتى",recent1h:"يېقىنقى 1 سائەت",
+    solarGen:"قۇياش ئېنېرگىيىسى",windGen:"شامال ئېنېرگىيىسى",todayGen:"بۈگۈن ئىشلەپچىقىرىش",todayUse:"بۈگۈن ئىشلىتىش",
+    minVoltage:"ئەڭ تۆۋەن بېسىم",batterySOC:"باتارېيە SOC",recent24h:"يېقىنقى 24 سائەت",recent5m:"يېقىنقى 5 مىنۇت",
+    batteryDischarge:"باتارېيە زەرەت ئەگرى سىزىقى",solarVsLoad:"قۇياش vs يۈك",energyTimeline:"ئېنېرگىيە ۋاقىت سىزىقى",
+    estimated:"مۆلچەر",solarShort:"قۇياش",loadShort:"يۈك",netSurplus:"ساپ ئارتۇق",
+    voltageLabel:"بېسىم",undervoltLine:"تۆۋەن بېسىم 11.5V",lightLux:"يورۇقلۇق 45k lux",windMs:"شامال 2.8 m/s",
+    sysRunning:"سىستېما ئىشلەۋاتىدۇ",solarRatio:"قۇياش ئۈلۈشى",
+    droughtThreshold:"قۇرغاقچىلىق بوسۇغىسى",safetyParam:"بىخەتەرلىك پارامېتىرلىرى",todayStats:"بۈگۈنكى ستاتىستىكا",
+    pumpConsole:"پومپا كونترول سۇپىسى",eventLog:"ۋەقە خاتىرىسى",
+    startLabel:"باشلاش",stopLabel:"توختاش",timeoutLabel:"ۋاقىت چەكلىمىسى",
+    undervoltage:"تۆۋەن بېسىم",lowWaterLevel:"تۆۋەن سۇ سەۋىيىسى",ecLimit:"EC چەكلىمىسى",
+    cumulative:"جەمئىي",timesUnit:"قېتىم",runningLabel:"ئىشلەۋاتىدۇ",
+    autoPump:"ئاپتوماتىك",manualPump:"قولدا",modeColon:"ھالەت:",pumpColon:"پومپا:",
+    allFilter:"ھەممىسى",warnFilter:"ئاگاھلاندۇرۇش",faultFilter:"كاشىلا",infoFilter:"ئۇچۇر",
+    decisionLabel:"قارار",demandLabel:"تەلەپ",conditionLabel:"شارائىت",
+    smartDecision:"ئەقلىي قارار موتورى",paramAdvice:"پارامېتىر تەۋسىيەسى",
+    curWashStage:"نۆۋەتتىكى تۇز يۇيۇش باسقۇچى",mainWash:"ئاساسىي يۇيۇش",
+    washStart:"تۇز يۇيۇش بوسۇغىسى (باشلاش)",washStop:"نىشان بوسۇغىسى (توختاش)",
+    ecTempCoeff:"EC تېمپېراتۇرا كوئېففىتسېنتى",ec10cmCur:"EC 10cm نۆۋەتتىكى",ec20cmCur:"EC 20cm نۆۋەتتىكى",
+    irrigQuotaRate:"سۇغىرىش نورما نىسبىتى",
+    fiveStateWash:"بەش ھالەتلىك تۇز يۇيۇش جەريانى",initWet:"INIT نەملەش",
+    wetForm:"WET ئالدى سەپ شەكىللىنىش",leachMain:"LEACH ئاساسىي يۇيۇش",
+    flushRinse:"FLUSH چايقاش",completeState:"COMPLETE تاماملاندى",
+    abExperiment:"A/B سېلىشتۇرۇش: ماسلىشىشچان vs تۇراقلىق تېمىتىپ سۇغىرىش",
+    constDrip:"A گۇرۇپپا تۇراقلىق",adaptiveDrip:"B گۇرۇپپا ماسلىشىشچان",estimatedSaving:"مۆلچەردىكى سۇ تېجەش",
+    deviceSpecs:"ئۈسكۈنە ئۆلچىمى ۋە كالىبرلاش",
+    mainControl:"ئاساسىي كونتروللىغۇچ",vision:"كۆرۈش",kclCal:"KCl كالىبرلاش",
+    r2Reliability:"R² ئىشەنچلىكلىك",tempCompensation:"تېمپېراتۇرا تولۇقلىمىسى",totalBOM:"ئومۇمىي BOM",
+    lockDecision:"ئۈچ قاتلاملىق قۇلۇپ قارار",monitorStatus:"نازارەت ھالىتى",
+    todayIrrigation:"بۈگۈنكى سۇغىرىش",monitorCount:"نازارەت قېتىم سانى / ئىجرا",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"ئالدى سەپ / باسقۇچ",
+    irrigQuotaIn:"سۇغىرىش نورمىسى:",waterReserve:"سۇ زاپىسى:",
+    demandLayer:"تەلەپ قاتلىمى",condLayer:"شارائىت قاتلىمى",
+    safetyLayer:"بىخەتەرلىك قاتلىمى",
+    pumpAbnormal:"نورمالسىز",clearWeather:"ئوچۇق",normalSys:"نورمال",
+    lowPriority:"تۆۋەن ئالدىراشلىق",needFollow:"كۆزىتىش كېرەك",
+    waterLevelShort:"سۇ سەۋىيىسى",voltage:"بېسىم",runTime:"ئىجرا ۋاقتى",runWater:"پومپا",
+    actionCheckSensor:"سېنزور ئۇلىنىشىنى تەكشۈرۈش",actionCheckWater:"سۇ مەنبەسى ۋە تۇرۇبا نورمال",
+    actioNMonitorTrend:"تۇپراق نەملىك يۆنىلىشىنى نازارەت قىلىش",actioNMonitorHum:"نەملىك ئۆزگىرىشىنى نازارەت قىلىش",
+    actionContinuePatrol:"داۋاملىق كۆزىتىش",actionCheckRefill:"سۇ مەنبەسىنى تەكشۈرۈش",
+    actionChargeWait:"توك قاچىلاش ياكى ساقلاش",actionWaitInterval:"بىخەتەرلىك ئارىلىقىنى كۈتۈش",
+    actionLockPass:"ئۈچ قاتلاملىق قۇلۇپ ئۆتتى",actioNEnergyNormal:"قۇياش-شامال ئېنېرگىيىسى نورمال",actionMonitorFollow:"نازارەت قىلىش تەۋسىيە",
+    // --- قارار ماتورى تېكىست ---
+    reachedTarget:"نىشانغا يەتتى",pumpStoppedTarget:"نىشان توختىتىش",lowWaterLocked:"تۆۋەن سۇ قۇلۇپ",undervoltLocked:"تۆۋەن بېسىم قۇلۇپ",timeoutLocked:"ۋاقىت قۇلۇپ",
+    autoMonitoring:"ئاپتوماتىك كۆزىتىش",autoMonitorStarted:"ئاپتوماتىك كۆزىتىش باشلاندى",lowWaterForbidden:"تۆۋەن سۇ چەكلەندى",undervoltForbidden:"تۆۋەن بېسىم چەكلەندى",timeoutForbidden:"ۋاقىت چەكلەندى",
+    manualRunning:"قولدا ئىشلەۋاتىدۇ",manualStopped:"قولدا توختىتىلدى",alreadyStopStatus:"توختىتىلدى",runningStatus:"ئىشلەۋاتىدۇ",lockedStatus:"قۇلۇپلاندى",standbyStatus:"كۈتۈش ھالىتى",
+    pumpRun:"ئىشلەش",pumpStop:"توختىتىش",
+    voltageNormal:"بېسىم نورمال",allowDecision:"رۇخسەت",forbidDecision:"چەكلەندى",autoInterlock:"ئاپتوماتىك قۇلۇپ",manualControlDesc:"قولدا كونترول",
+    needAttention:"دىققەت قىلىڭ",notMetCond:"توشمىدى",waterVoltNormal:"سۇ/بېسىم نورمال",conditionInsufficient:"شارائىت يېتەرسىز",
+    adviseAttention:"دىققەت قىلىش",adviseNotAttention:"ھازىرچە دىققەت قىلماڭ",
+    solarWindNormal:"قۇياش-شامال ئېنېرگىيىسى نورمال",canMonitorFollow:"كۆزىتىشكە بولىدۇ",highPriority:"يۇقىرى ئاۋۋاللىق",
+    humReachedOptimal:"نەملىك مۇۋاپىق",humNotThreshold:"نەملىك چەككە يەتمىدى",undervoltBlocked:"تۆۋەن بېسىم قۇلۇپ",safetyInterval:"بىخەتەرلىك ئارىلىقى",
+    completed:"تاماملاندى",postponed:"كېچىكتۈرۈلدى",monitorNormalStandby:"نورمال كۆزىتىش، كۈتۈش",noAlertContinueWatch:"ئاگاھسىز، كۆزىتىش",
+    voltageConditionMet:"بېسىم تەلىپى توشتى",voltageLow:"بېسىم تۆۋەن",alreadyLocked:"قۇلۇپلاندى",notLocked:"قۇلۇپلانمىدى",
+    timeoutProtectionTriggered:"ۋاقىت قوغداش قوزغىتىلدى",inDroughtAlertWindow:"قۇرغاقچىلىق ئاگاھ كۆزنىكىدە",
+    trendDown:"تۆۋەنلەش ▼",trendUp:"يۇقىرىلاش ▲",trendFlat:"تۇراقلىق →",
+    severeDrought:"ئېغىر قۇرغاقچىلىق",moderateDrought:"ئوتتۇرا قۇرغاقچىلىق",mildDry:"يېنىك قۇرغاق",
+    energyNormalMsg:"قۇياش-شامال نورمال، باك تولۇق، تەكشۈرۈشنى داۋاملاشتۇرۇڭ.","energyLowMsg":"باك تۆۋەن، يامغۇردا 5s غا چۈشۈرۈڭ.","energyCritMsg":"باك ھالقىلىق، دەرھال توك قاچىلاڭ.",
+    range3Days:"≥3 كۈن",range1Day:"≥1 كۈن",range12Hours:"<12 سائەت",connectingLabel:"قايتا ئۇلىنىۋاتىدۇ",
+    belowFieldCapCond:"تۇپراق نەملىكى دالا سىغىمى 60% دىن تۆۋەن",
+    humAboveThresh:"نەملىك ≥{0}% كۈتۈش",humBelowThreshAlert:"قۇرغاقچىلىق چېكى {0}% تىن تۆۋەن، ئاگاھ",
+    humNotBelowThresh:"چەكتىن تۆۋەن ئەمەس {0}%",humReachedPct:"نىشانغا يەتتى({0}%)",
+    irrigRunningWithPct:"سۇغىرىش داۋامىدا(nەم≤{0}%)",humExceedsTS:"نەملىك {0}% ≥ {1}%",
+    reachedStopThresh:"{0}% توختىتىش چېكىگە يەتتى",interceptCount:"{0} تۇيۇق شەرتى، سۇغىرىش كېچىكتۈرۈلدى.",
+    descReachStopDone:"نەملىك {0}% چېكىگە يەتتى، سۇغىرىش تاماملاندى، كۈتۈش ھالىتى.",
+    descReachStopMonitor:"نەملىك {0}% چېكىگە يەتتى، مەلۇمات تاماملاندى. كۆزىتىش داۋاملىشىدۇ.",
+    descBelowFieldCapFull:"دالا سىغىمى 60% تىن تۆۋەن، 3 قۇلۇپ ئۆتتى، سۇغىرىش تەۋسىيە.",
+    descInterceptList:"تۆۋەندىكى تۇيۇق شەرتى بايقالدى، تەكشۈرۈڭ:",
+    cumulativeXTimes:"جەمئىي {0} قېتىم",runningXhXm:"ئىشلەۋاتىدۇ {0}h {1}m",
+    adviseIrrigateLabel:"سۇغىرىش",noAlertShort:"ئاگاھسىز",waterInsufficient:"سۇ يېتەرسىز",
+    adviseMonitorFollowLabel:"كۆزىتىش تەۋسىيە",humidityShort:"نەملىك",
+    advDescBelowThresh:"تۇپراق نەملىكى {0}% قۇرغاقچىلىق چېكى {1}% تىن تۆۋەن، كۆزىتىشنى داۋاملاشتۇرۇڭ؛ باتارېيە {2}V نورمال.",
+    settingsSysInfo:"سىستېما ئۇچۇرى",settingsNotify:"ئۇقتۇرۇش تەڭشەك",restoreDefaults:"سۈكۈتتىكىگە قايتۇرۇش",
+    actCheckSensorShort:"سېنزور ئۇلىنىشىنى تەكشۈرۈش",actCheckWaterShort:"سۇ مەنبەسى ۋە تۇرۇبا نورمال",
+    actMonitorTrendShort:"تۇپراق نەملىك يۆنىلىشىنى نازارەت قىلىش",
+    droughtNotify:"قۇرغاقچىلىق ئاگاھلاندۇرۇشى",voltAnomalyNotify:"توك بېسىمى ئاگاھلاندۇرۇشى",ecExceedNotify:"EC ھەددىدىن ئېشىش ئاگاھى",cloudDisconNotify:"بۇلۇت ئۈزۈلۈش ئاگاھلاندۇرۇشى",
+    sysVersionLabel:"سىستېما نەشرى",sysModeLabel:"يۈرۈش ھالىتى",sysUptimeLabel:"يۈرۈش ۋاقتى",deviceIdLabel:"ئۈسكۈنە نومۇرى",
+    systemInfoTagline:"逐光巡墒 — ئەقلىي تۇپراق كۆزىتىش ۋە قۇرغاقچىلىق ئالدىن ئاگاھلاندۇرۇش سىستېمىسى"
+  },
+  kk: {
+    curHumidity:"Ағымдағы ылғалдылық",maxMin:"Макс / Мин",avgHumidity:"Орташа ылғалдылық",passRate:"Өту көрсеткіші",
+    humidityCurve:"Топырақ ылғалдылық қисығы (2 сағ)",line35:"35% бастау сызығы",line70:"70% тоқтау сызығы",realTime:"Нақты уақыт",
+    soilEC10:"Топырақ EC 10cm",soilEC20:"Топырақ EC 20cm",wetFront:"Ылғалдану шебі",
+    targetDsm:"dS/m (Мақсат < 2.0)",phaseInfo:"Кезең:",
+    ecCompare:"EC қабатты салыстыру",recent10m:"Соңғы 10 мин",alert4:"Дабыл 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    timeAbove35:"≥35% уақыт үлесі",recent1h:"Соңғы 1 сағ",
+    solarGen:"Күн энергиясы",windGen:"Жел энергиясы",todayGen:"Бүгінгі өндіріс",todayUse:"Бүгінгі тұтыну",
+    minVoltage:"Мин кернеу",batterySOC:"Батарея SOC",recent24h:"Соңғы 24 сағ",recent5m:"Соңғы 5 мин",
+    batteryDischarge:"Батарея разряд қисығы",solarVsLoad:"Күн vs Жүктеме",energyTimeline:"Энергия уақыт сызығы",
+    estimated:"Болжамды",solarShort:"Күн",loadShort:"Жүктеме",netSurplus:"Таза артық",
+    voltageLabel:"Кернеу",undervoltLine:"Төмен кернеу 11.5V",lightLux:"Жарық 45k lux",windMs:"Жел 2.8 m/s",
+    sysRunning:"Жүйе жұмыс істеуде",solarRatio:"Күн үлесі",
+    droughtThreshold:"Құрғақшылық шегі",safetyParam:"Қауіпсіздік параметрлері",todayStats:"Бүгінгі статистика",
+    pumpConsole:"Сорғы басқару панелі",eventLog:"Оқиғалар журналы",
+    startLabel:"Бастау",stopLabel:"Тоқтату",timeoutLabel:"Уақыт шегі",
+    undervoltage:"Төмен кернеу",lowWaterLevel:"Төмен су деңгейі",ecLimit:"EC шегі",
+    cumulative:"Жиынтық",timesUnit:"рет",runningLabel:"жұмыс",
+    autoPump:"Авто",manualPump:"Қолмен",modeColon:"Режим:",pumpColon:"Сорғы:",
+    allFilter:"Барлығы",warnFilter:"Ескерту",faultFilter:"Ақау",infoFilter:"Ақпарат",
+    decisionLabel:"Шешім",demandLabel:"Сұраныс",conditionLabel:"Шарт",
+    smartDecision:"Ақылды шешім қозғалтқышы",paramAdvice:"Параметр кеңестері",
+    curWashStage:"Ағымдағы тұз жуу кезеңі",mainWash:"Негізгі жуу",
+    washStart:"Тұз жуу шегі (бастау)",washStop:"Мақсатты шек (тоқтату)",
+    ecTempCoeff:"EC температура коэффициенті",ec10cmCur:"EC 10cm ағымдағы",ec20cmCur:"EC 20cm ағымдағы",
+    irrigQuotaRate:"Суару нормасының орындалуы",
+    fiveStateWash:"Бес күйлі тұз жуу процесі",initWet:"INIT Ылғалдандыру",
+    wetForm:"WET Шеп түзілу",leachMain:"LEACH Негізгі жуу",
+    flushRinse:"FLUSH Шаю",completeState:"COMPLETE Аяқталды",
+    abExperiment:"A/B салыстыру: Бейімделгіш vs Тұрақты тамшылатып суару",
+    constDrip:"A тобы Тұрақты",adaptiveDrip:"B тобы Бейімделгіш",estimatedSaving:"Болжамды су үнемдеу",
+    deviceSpecs:"Құрылғы сипаттамалары",
+    mainControl:"Негізгі контроллер",vision:"Көру",kclCal:"KCl калибрлеу",
+    r2Reliability:"R² сенімділік",tempCompensation:"Температура компенсациясы",totalBOM:"Жалпы BOM",
+    lockDecision:"Үш деңгейлі құлып шешімі",monitorStatus:"Бақылау күйі",
+    todayIrrigation:"Бүгінгі суару",monitorCount:"Бақылау саны / жұмыс",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"Шеп / Кезең",
+    irrigQuotaIn:"Суару нормасы:",waterReserve:"Су қоры:",
+    demandLayer:"Сұраныс деңгейі",condLayer:"Шарт деңгейі",
+    safetyLayer:"Қауіпсіздік деңгейі",
+    pumpAbnormal:"Қалыптан тыс",clearWeather:"Ашық",normalSys:"Қалыпты",
+    lowPriority:"Төмен басымдық",needFollow:"Бақылау қажет",
+    waterLevelShort:"Су деңгейі",voltage:"Кернеу",runTime:"Жұмыс уақыты",runWater:"Сорғы",
+    actionCheckSensor:"Сенсор қосылымын тексеру",actionCheckWater:"Су көзі мен құбырларды тексеру",
+    actioNMonitorTrend:"Топырақ ылғалдылық трендін бақылау",actioNMonitorHum:"Ылғалдылық өзгеруін бақылау",
+    actionContinuePatrol:"Патрульді жалғастыру",actionCheckRefill:"Су көзін тексеру, толтыру",
+    actionChargeWait:"Қуаттау немесе күту",actionWaitInterval:"Қауіпсіздік аралығын күту",
+    actionLockPass:"Құлыптан өтті",actioNEnergyNormal:"Күн-жел энергиясы қалыпты",actionMonitorFollow:"Бақылау ұсынылады"
+  },
+  ky: {
+    curHumidity:"Учурдагы нымдуулук",maxMin:"Макс / Мин",avgHumidity:"Орточо нымдуулук",passRate:"Өтүү көрсөткүчү",
+    humidityCurve:"Топурак нымдуулук ийриси (2 саат)",line35:"35% баштоо сызыгы",line70:"70% токтотуу сызыгы",realTime:"Реалдуу убакыт",
+    soilEC10:"Топурак EC 10cm",soilEC20:"Топурак EC 20cm",wetFront:"Нымдануу чеби",
+    targetDsm:"dS/m (Максат < 2.0)",phaseInfo:"Фаза:",
+    ecCompare:"EC катмар салыштыруу",recent10m:"Акыркы 10 мүн",alert4:"Эскертүү 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    timeAbove35:"≥35% убакыт үлүшү",recent1h:"Акыркы 1 саат",
+    solarGen:"Күн энергиясы",windGen:"Шамал энергиясы",todayGen:"Бүгүнкү өндүрүү",todayUse:"Бүгүнкү керектөө",
+    minVoltage:"Мин чыңалуу",batterySOC:"Батарея SOC",recent24h:"Акыркы 24 саат",recent5m:"Акыркы 5 мүн",
+    batteryDischarge:"Батарея разряд ийриси",solarVsLoad:"Күн vs Жүк",energyTimeline:"Энергия убакыт сызыгы",
+    estimated:"Болжолдуу",solarShort:"Күн",loadShort:"Жүк",netSurplus:"Таза ашыкча",
+    voltageLabel:"Чыңалуу",undervoltLine:"Төмөн чыңалуу 11.5V",lightLux:"Жарык 45k lux",windMs:"Шамал 2.8 m/s",
+    sysRunning:"Система иштеп жатат",solarRatio:"Күн үлүшү",
+    droughtThreshold:"Кургакчылык чеги",safetyParam:"Коопсуздук параметрлери",todayStats:"Бүгүнкү статистика",
+    pumpConsole:"Соргуч башкаруу панели",eventLog:"Окуялар журналы",
+    startLabel:"Баштоо",stopLabel:"Токтотуу",timeoutLabel:"Убакыт чеги",
+    undervoltage:"Төмөн чыңалуу",lowWaterLevel:"Төмөн суу деңгээли",ecLimit:"EC чеги",
+    cumulative:"Жалпы",timesUnit:"жолу",runningLabel:"иштөө",
+    autoPump:"Авто",manualPump:"Кол менен",modeColon:"Режим:",pumpColon:"Соргуч:",
+    allFilter:"Баары",warnFilter:"Эскертүү",faultFilter:"Бузулуу",infoFilter:"Маалымат",
+    decisionLabel:"Чечим",demandLabel:"Талап",conditionLabel:"Шарт",
+    smartDecision:"Акылдуу чечим кыймылдаткычы",paramAdvice:"Параметр сунуштары",
+    curWashStage:"Учурдагы туз жуу фазасы",mainWash:"Негизги жуу",
+    washStart:"Туз жуу чеги (баштоо)",washStop:"Максаттык чек (токтотуу)",
+    ecTempCoeff:"EC температура коэффициенти",ec10cmCur:"EC 10cm учурдагы",ec20cmCur:"EC 20cm учурдагы",
+    irrigQuotaRate:"Сугаруу нормасынын аткарылышы",
+    fiveStateWash:"Беш абалдуу туз жуу процесси",initWet:"INIT Нымдоо",
+    wetForm:"WET Чеп түзүлүү",leachMain:"LEACH Негизги жуу",
+    flushRinse:"FLUSH Чаюу",completeState:"COMPLETE Бүттү",
+    abExperiment:"A/B салыштыруу: Адаптивдүү vs Туруктуу тамчылатып сугаруу",
+    constDrip:"A тобу Туруктуу",adaptiveDrip:"B тобу Адаптивдүү",estimatedSaving:"Болжолдуу суу үнөмдөө",
+    deviceSpecs:"Жабдык мүнөздөмөлөрү",
+    mainControl:"Негизги контроллер",vision:"Көрүү",kclCal:"KCl калибрлөө",
+    r2Reliability:"R² ишенимдүүлүк",tempCompensation:"Температура компенсациясы",totalBOM:"Жалпы BOM",
+    lockDecision:"Үч катмарлуу кулпу чечими",monitorStatus:"Мониторинг абалы",
+    todayIrrigation:"Бүгүнкү сугаруу",monitorCount:"Мониторинг саны / Иштөө",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"Чеп / Фаза",
+    irrigQuotaIn:"Сугаруу нормасы:",waterReserve:"Суу запасы:",
+    demandLayer:"Талап катмары",condLayer:"Шарт катмары",
+    safetyLayer:"Коопсуздук катмары",
+    pumpAbnormal:"Анормалдуу",clearWeather:"Ачык",normalSys:"Нормалдуу",
+    lowPriority:"Төмөн артыкчылык",needFollow:"Көзөмөл керек",
+    waterLevelShort:"Суу деңгээли",voltage:"Чыңалуу",runTime:"Иштөө убактысы",runWater:"Соргуч",
+    actionCheckSensor:"Сенсор байланышын текшерүү",actionCheckWater:"Суу булагы жана түтүктөр",
+    actioNMonitorTrend:"Топурак нымдуулук трендин көзөмөлдөө",actioNMonitorHum:"Нымдуулук өзгөрүүсүн көзөмөлдөө",
+    actionContinuePatrol:"Патрулдоону улантуу",actionCheckRefill:"Суу булагын текшерүү",
+    actionChargeWait:"Кубаттоо же күтүү",actionWaitInterval:"Коопсуздук интервалын күтүү",
+    actionLockPass:"Кулпудан өттү",actioNEnergyNormal:"Күн-шамал энергиясы нормалдуу",actionMonitorFollow:"Көзөмөлдөө сунушталат"
+  },
+  mn: {
+    curHumidity:"Одоогийн чийгшил",maxMin:"Хамгийн их / бага",avgHumidity:"Дундаж чийгшил",passRate:"Давсан хувь",
+    humidityCurve:"Хөрсний чийгшлийн муруй (2 цаг)",line35:"35% эхлэх шугам",line70:"70% зогсох шугам",realTime:"Бодит цаг",
+    soilEC10:"Хөрсний EC 10cm",soilEC20:"Хөрсний EC 20cm",wetFront:"Чийгшлийн фронт",
+    targetDsm:"dS/m (Зорилт < 2.0)",phaseInfo:"Үе шат:",
+    ecCompare:"EC давхаргын харьцуулалт",recent10m:"Сүүлийн 10 мин",alert4:"Сэрэмжлүүлэг 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    timeAbove35:"≥35% цагийн хувь",recent1h:"Сүүлийн 1 цаг",
+    solarGen:"Нарны эрчим хүч",windGen:"Салхины эрчим хүч",todayGen:"Өнөөдрийн үйлдвэрлэл",todayUse:"Өнөөдрийн хэрэглээ",
+    minVoltage:"Хамгийн бага хүчдэл",batterySOC:"Батерей SOC",recent24h:"Сүүлийн 24 цаг",recent5m:"Сүүлийн 5 мин",
+    batteryDischarge:"Батерей цэнэггүйжих муруй",solarVsLoad:"Нар vs Ачаалал",energyTimeline:"Эрчим хүчний цагийн шугам",
+    estimated:"Тооцоолол",solarShort:"Нар",loadShort:"Ачаалал",netSurplus:"Цэвэр илүүдэл",
+    voltageLabel:"Хүчдэл",undervoltLine:"Бага хүчдэл 11.5V",lightLux:"Гэрэл 45k lux",windMs:"Салхи 2.8 m/s",
+    sysRunning:"Систем ажиллаж байна",solarRatio:"Нарны эзлэх хувь",
+    droughtThreshold:"Гангийн босго",safetyParam:"Аюулгүй байдлын параметр",todayStats:"Өнөөдрийн статистик",
+    pumpConsole:"Насосны удирдлагын самбар",eventLog:"Үйл явдлын бүртгэл",
+    startLabel:"Эхлэх",stopLabel:"Зогсоох",timeoutLabel:"Хугацаа хэтрэлт",
+    undervoltage:"Бага хүчдэл",lowWaterLevel:"Бага усны түвшин",ecLimit:"EC хязгаар",
+    cumulative:"Нийт",timesUnit:"удаа",runningLabel:"ажиллаж",
+    autoPump:"Авто",manualPump:"Гараар",modeColon:"Горим:",pumpColon:"Насос:",
+    allFilter:"Бүгд",warnFilter:"Анхааруулга",faultFilter:"Гэмтэл",infoFilter:"Мэдээлэл",
+    decisionLabel:"Шийдвэр",demandLabel:"Эрэлт",conditionLabel:"Нөхцөл",
+    smartDecision:"Ухаалаг шийдвэрийн хөдөлгүүр",paramAdvice:"Параметрийн зөвлөмж",
+    curWashStage:"Одоогийн давс угаах үе шат",mainWash:"Үндсэн угаалга",
+    washStart:"Давс угаах босго (эхлэх)",washStop:"Зорилтот босго (зогсоох)",
+    ecTempCoeff:"EC температурын коэффициент",ec10cmCur:"EC 10cm одоогийн",ec20cmCur:"EC 20cm одоогийн",
+    irrigQuotaRate:"Усжуулалтын норм гүйцэтгэл",
+    fiveStateWash:"Таван төлөвт давс угаах процесс",initWet:"INIT Чийгшүүлэх",
+    wetForm:"WET Фронт үүсэх",leachMain:"LEACH Үндсэн угаалга",
+    flushRinse:"FLUSH Цэвэрлэх",completeState:"COMPLETE Дууссан",
+    abExperiment:"A/B харьцуулалт: Дасан зохицох vs Тогтмол дуслын усжуулалт",
+    constDrip:"A бүлэг Тогтмол",adaptiveDrip:"B бүлэг Дасан зохицох",estimatedSaving:"Тооцоолсон ус хэмнэлт",
+    deviceSpecs:"Төхөөрөмжийн үзүүлэлт",
+    mainControl:"Үндсэн хянагч",vision:"Хараа",kclCal:"KCl шалгалт тохируулга",
+    r2Reliability:"R² найдвартай байдал",tempCompensation:"Температур нөхөн төлбөр",totalBOM:"Нийт BOM",
+    lockDecision:"Гурван түвшний түгжээний шийдвэр",monitorStatus:"Хяналтын төлөв",
+    todayIrrigation:"Өнөөдрийн усжуулалт",monitorCount:"Хяналтын тоо / Ажиллагаа",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"Фронт / Үе шат",
+    irrigQuotaIn:"Усжуулалтын норм:",waterReserve:"Усны нөөц:",
+    demandLayer:"Эрэлтийн түвшин",condLayer:"Нөхцлийн түвшин",
+    safetyLayer:"Аюулгүй байдлын түвшин",
+    pumpAbnormal:"Хэвийн бус",clearWeather:"Цэлмэг",normalSys:"Хэвийн",
+    lowPriority:"Бага тэргүүлэх",needFollow:"Хянах шаардлагатай",
+    waterLevelShort:"Усны түвшин",voltage:"Хүчдэл",runTime:"Ажиллах хугацаа",runWater:"Насос",
+    actionCheckSensor:"Мэдрэгч холболтыг шалгах",actionCheckWater:"Усны эх үүсвэр ба хоолой",
+    actioNMonitorTrend:"Хөрсний чийгшлийн тренд хянах",actioNMonitorHum:"Чийгшлийн өөрчлөлтийг хянах",
+    actionContinuePatrol:"Эргүүлийг үргэлжлүүлэх",actionCheckRefill:"Усны эх үүсвэр шалгах",
+    actionChargeWait:"Цэнэглэх эсвэл хүлээх",actionWaitInterval:"Аюулгүй байдлын завсар хүлээх",
+    actionLockPass:"Түгжээгээр орсон",actioNEnergyNormal:"Нар-салхины эрчим хүч хэвийн",actionMonitorFollow:"Хянахыг зөвлөж байна"
+  },
+  bo: {
+    curHumidity:"ད་ལྟའི་རླན་ཚད།",maxMin:"མཐོ་ཤོས། / དམའ་ཤོས།",avgHumidity:"ཆ་སྙོམས་རླན་ཚད།",passRate:"ཚད་ལོན་ཚད་གྲངས།",
+    humidityCurve:"ས་རླན་རེ་ལྡེབ། (ཆུ་ཚོད་༢)",line35:"༣༥% འགོ་འཛུགས་ཐིག",line70:"༧༠% འགོག་ཐིག",realTime:"དུས་ཐོག་གནས་ཚུལ།",
+    soilEC10:"ས་ཞིང་EC 10cm",soilEC20:"ས་ཞིང་EC 20cm",wetFront:"རླན་མདུན་ངོས།",
+    targetDsm:"dS/m (དམིགས་འབེན < 2.0)",phaseInfo:"རིམ་པ།:",
+    ecCompare:"EC རིམ་པའི་བསྡུར་ཚད།",recent10m:"ཉེ་བའི་སྐར་མ་༡༠",alert4:"ཉེན་བརྡ་ 4.0",ec10cm:"EC 10cm",ec20cm:"EC 20cm",
+    timeAbove35:"≥༣༥% དུས་ཚོད་བསྡུར་ཚད།",recent1h:"ཉེ་བའི་ཆུ་ཚོད་༡",
+    solarGen:"ཉི་གློག་སྐྱེད་ཚད།",windGen:"རླུང་གློག་སྐྱེད་ཚད།",todayGen:"དེ་རིང་སྐྱེད་ཚད།",todayUse:"དེ་རིང་བེད་སྤྱོད།",
+    minVoltage:"དམའ་ཤོས་གློག་ཤུགས།",batterySOC:"གློག་སྨན་ SOC",recent24h:"ཉེ་བའི་ཆུ་ཚོད་༢༤",recent5m:"ཉེ་བའི་སྐར་མ་༥",
+    batteryDischarge:"གློག་སྨན་ཕྱིར་གཏོང་རེ་ལྡེབ།",solarVsLoad:"ཉི་གློག་དང་ཁུར་པོ།",energyTimeline:"ནུས་པའི་དུས་ཐིག",
+    estimated:"ཚོད་དཔག",solarShort:"ཉི་གློག",loadShort:"ཁུར་པོ།",netSurplus:"དྭངས་གཙང་ལྷག་མ།",
+    voltageLabel:"གློག་ཤུགས།",undervoltLine:"དམའ་བའི་གློག་ཤུགས་ 11.5V",lightLux:"འོད་སྣང་ 45k lux",windMs:"རླུང་ཤུགས་ 2.8 m/s",
+    sysRunning:"མ་ལག་ལས་བཞིན་པ།",solarRatio:"ཉི་གློག་བསྡུར་ཚད།",
+    droughtThreshold:"ཐན་པའི་མཐའ་ཚད།",safetyParam:"བདེ་འཇགས་ཞུགས་གྲངས།",todayStats:"དེ་རིང་སྡོམ་རྩིས།",
+    pumpConsole:"སློག་འཕྲུལ་ཚོད་འཛིན་སྟེགས་བུ།",eventLog:"བྱུང་རིམ་ཟིན་ཐོ།",
+    startLabel:"འགོ་འཛུགས།",stopLabel:"འགོག་པ།",timeoutLabel:"དུས་ཚོད་ལས་འདས།",
+    undervoltage:"དམའ་བའི་གློག་ཤུགས།",lowWaterLevel:"དམའ་བའི་ཆུ་ཚད།",ecLimit:"EC ཚད་བཀག",
+    cumulative:"སྡོམ་འབོར།",timesUnit:"ཐེངས།",runningLabel:"ལས་བཞིན་པ།",
+    autoPump:"རང་འགུལ།",manualPump:"ལག་བཀོལ།",modeColon:"རྣམ་པ།:",pumpColon:"སློག་འཕྲུལ།:",
+    allFilter:"ཡོངས་རྫོགས།",warnFilter:"ཉེན་བརྡ།",faultFilter:"སྐྱོན་ཆ།",infoFilter:"ཆ་འཕྲིན།",
+    decisionLabel:"ཐག་གཅོད།",demandLabel:"དགོས་མཁོ།",conditionLabel:"ཆ་རྐྱེན།",
+    smartDecision:"རིག་ནུས་ཐག་གཅོད་སྒུལ་ཆས།",paramAdvice:"ཞུགས་གྲངས་དགོངས་འཆར།",
+    curWashStage:"ད་ལྟའི་ཚྭ་བཀྲུ་རིམ་པ།",mainWash:"གཙོ་བོའི་བཀྲུ་བ།",
+    washStart:"ཚྭ་བཀྲུ་མཐའ་ཚད། (འགོ་འཛུགས།)",washStop:"དམིགས་འབེན་མཐའ་ཚད། (འགོག་པ།)",
+    ecTempCoeff:"EC དྲོད་ཚད་བསྒྱུར་ཆ།",ec10cmCur:"EC 10cm ད་ལྟ།",ec20cmCur:"EC 20cm ད་ལྟ།",
+    irrigQuotaRate:"ཆུ་གཏོང་ཚད་གཞི་ལེགས་གྲུབ།",
+    fiveStateWash:"གནས་སྟངས་ལྔའི་ཚྭ་བཀྲུ་ལས་རིམ།",initWet:"INIT རླན་གསོ།",
+    wetForm:"WET མདུན་ངོས་གྲུབ་པ།",leachMain:"LEACH གཙོ་བོའི་བཀྲུ་བ།",
+    flushRinse:"FLUSH ཁྲུ་བ།",completeState:"COMPLETE ལེགས་གྲུབ།",
+    abExperiment:"A/B བསྡུར་ཚད།: བསྟུན་འཚམས་དང་རྟག་བརྟན་ཐིགས་སྒོའི་ཆུ་གཏོང་།",
+    constDrip:"A སྡེ་ཚན་རྟག་བརྟན།",adaptiveDrip:"B སྡེ་ཚན་བསྟུན་འཚམས།",estimatedSaving:"ཚོད་དཔག་ཆུ་སྲུང་།",
+    deviceSpecs:"ཡོ་བྱད་གཞི་རྩའི་ཞུགས་གྲངས།",
+    mainControl:"གཙོ་འཛིན་ཆས།",vision:"མཐོང་རིག",kclCal:"KCl ཚད་ལྡན་བཟོ་བ།",
+    r2Reliability:"R² ཡིད་ཆེས་ཚད།",tempCompensation:"དྲོད་ཚད་གྱང་སྐྱོང་།",totalBOM:"ཡོངས་ཁྱབ་ BOM",
+    lockDecision:"རིམ་པ་གསུམ་གྱི་ལྡེ་མིག་ཐག་གཅོད།",monitorStatus:"ལྟ་ཞིབ་གནས་སྟངས།",
+    todayIrrigation:"དེ་རིང་ཆུ་གཏོང་།",monitorCount:"ལྟ་ཞིབ་ཐེངས་གྲངས། / ལས་བཞིན།",
+    ecDepth:"EC·10cm / 20cm",frontPhaseLabel:"མདུན་ངོས། / རིམ་པ།",
+    irrigQuotaIn:"ཆུ་གཏོང་ཚད་གཞི།:",waterReserve:"ཆུ་ལྷག་:", 
+    demandLayer:"དགོས་མཁོའི་རིམ་པ།",condLayer:"ཆ་རྐྱེན་གྱི་རིམ་པ།",
+    safetyLayer:"བདེ་འཇགས་རིམ་པ།",
+    pumpAbnormal:"རྒྱུན་མིན།",clearWeather:"གནམ་གསལ།",normalSys:"རྒྱུན་ལྡན།",
+    lowPriority:"དམའ་བའི་གལ་ཆེན།",needFollow:"རྗེས་འདེད་དགོས།",
+    waterLevelShort:"ཆུ་ཚད།",voltage:"གློག་ཤུགས།",runTime:"ལས་བཞིན་དུས་ཚོད།",runWater:"སློག་འཕྲུལ།",
+    actionCheckSensor:"སེན་སོར་མཐུད་སྦྲེལ་ཞིབ་བཤེར།",actionCheckWater:"ཆུ་ཁུངས་དང་སྦུག་ཆས་ལྟ་ཞིབ།",
+    actioNMonitorTrend:"ས་རླན་འགྱུར་རྣམ་ལྟ་ཞིབ།",actioNMonitorHum:"རླན་ཚད་འགྱུར་ལྡོག་ལྟ་ཞིབ།",
+    actionContinuePatrol:"མུ་མཐུད་ལྟ་ཞིབ།",actionCheckRefill:"ཆུ་ཁུངས་ཞིབ་བཤེར།",
+    actionChargeWait:"གློག་གསོག་གམ་སྒུག་པ།",actionWaitInterval:"བདེ་འཇགས་བར་མཚམས་སྒུག་པ།",
+    actionLockPass:"ལྡེ་མིག་བརྒྱུད་སོང་།",actioNEnergyNormal:"ཉི་རླུང་ནུས་པ་རྒྱུན་ལྡན།",actionMonitorFollow:"ལྟ་ཞིབ་བྱེད་དགོས།"
+  }
+};
+
+function _(key){
+  var lang = i18n[currentLang] || i18n.zh;
+  if (lang[key]) return lang[key];
+  if (i18nExtra[currentLang] && i18nExtra[currentLang][key]) return i18nExtra[currentLang][key];
+  if (i18n.zh[key]) return i18n.zh[key];
+  if (i18nExtra.zh && i18nExtra.zh[key]) return i18nExtra.zh[key];
+  return key;
+}
+// 模板格式化辅助函数：_f("湿度{0}% ≥ {1}%", 65, 35)
+function _f(key, a, b, c, d){
+  var s = _(key);
+  if (typeof a!=='undefined') s = s.replace('{0}', a);
+  if (typeof b!=='undefined') s = s.replace('{1}', b);
+  if (typeof c!=='undefined') s = s.replace('{2}', c);
+  if (typeof d!=='undefined') s = s.replace('{3}', d);
+  return s;
+}
+
+// === 全系统 DOM 刷新（所有页面文字翻译） ===
+// === 全系统 DOM 刷新（所有页面文字翻译） ===
+// 原始中文文本 → i18n key 映射表。用于扫描 DOM 中所有静态标签元素并替换文本。
+var cardLabelMap = {
+  // ── 卡片标题（card-hdr .lbl，自动去除前导 emoji 后匹配）──
+  "土壤水分":"soilMoisture","土壤温度":"soilTemp","电导率 EC":"soilEC","土壤pH":"soilPH",
+  "三层联锁决策":"lockDecision","旱情概览":"droughtOverview",
+  "当前湿度":"curHumidity","最高 / 最低":"maxMin","平均湿度":"avgHumidity","达标率":"passRate",
+  "土壤湿度详细曲线（近2小时）":"humidityCurve",
+  "土壤EC 10cm":"soilEC10","土壤EC 20cm":"soilEC20","湿润锋推进":"wetFront",
+  "EC 分层对比趋势 (10cm / 20cm)":"ecCompare",
+  "电池电压":"batteryVoltage","光伏发电":"solarGen","风力发电":"windGen","负荷功率":"loadPower",
+  "今日发电":"todayGen","今日用电":"todayUse","最低电压":"minVoltage","蓄电池 SOC":"batterySOC",
+  "能源效率评估":"energyEfficiency","功率平衡":"powerBalance",
+  "电池放电曲线":"batteryDischarge","光伏 vs 负荷对比":"solarVsLoad","能源收支时序":"energyTimeline",
+  "旱情阈值设置":"droughtThreshold","安全参数":"safetyParam","今日监测统计":"todayStats",
+  "水泵控制台":"pumpConsole","完整事件日志":"eventLog",
+  "智能决策引擎":"smartDecision","参数建议与工程判据":"paramAdvice",
+  "五态洗盐工艺状态流转（ESP32状态机）":"fiveStateWash",
+  "A/B对照实验：自适应 vs 恒定滴灌":"abExperiment",
+  "设备规格与率定参数":"deviceSpecs","建议关注":"adviceTitle",
+  // 设置面板卡片标题
+  "语言设置":"cloudLang","云端连接":"cloudConn","用户账户":"cloudUser","系统信息":"settingsSysInfo",
+  // ── 滑动条标签 ──
+  "启动":"startLabel","停止":"stopLabel","超时":"timeoutLabel",
+  "欠压":"undervoltage","低水位":"lowWaterLevel","EC上限":"ecLimit",
+  // ── 大数值标签（big-label）──
+  "光伏":"solarShort","负荷":"loadShort","近24h":"recent24h","估算":"estimated",
+  // ── 概览格标签（ov-cell-l）──
+  "今日灌水量":"todayIrrigation","监测次数 / 运行":"monitorCount",
+  "EC·10cm / 20cm":"ecDepth","湿润锋 / 阶段":"frontPhaseLabel",
+  "灌水定额:":"irrigQuotaIn","蓄水余量:":"waterReserve",
+  // ── 联锁区段标题（il-sec-t）──
+  "需求层 — 土壤湿度阈值":"demandLayer","条件层 — 水位与电压":"condLayer",
+  "安全层 — 超时保护":"safetyLayer","监测状态":"monitorStatus",
+  // ── 指标卡副标题（metric-card .sub）──
+  "偏干":"badgeDry","正常":"badgeNormal","充足":"badgeWet","湿润":"badgeWet",
+  "\u226535% 时间占比":"timeAbove35","近1小时":"recent1h","光照 45k lux":"lightLux",
+  "风速 2.8 m/s":"windMs","系统运行":"sysRunning","晴天":"clearWeather",
+  // ── 盐度统计标签（salt-l）──
+  "dS/m（目标 < 2.0）":"targetDsm",
+  // ── 图例文本（an-legend span）──
+  "35%启动线":"line35","70%停止线":"line70","实时数据":"realTime",
+  "EC 10cm":"ec10cm","EC 20cm":"ec20cm","警戒 4.0":"alert4",
+  "近10分钟":"recent10m","近5分钟":"recent5m",
+  "电压":"voltageLabel","欠压 11.5V":"undervoltLine",
+  "光伏发电":"solarGen","系统负荷":"loadPower","净盈余":"netSurplus",
+  // ── 筛选项按钮 ──
+  "全部":"allFilter","\u26A0 警告":"warnFilter","\u25CF 故障":"faultFilter","\u2139 信息":"infoFilter",
+  // ── 控制标签 ──
+  "模式:":"modeColon","水泵:":"pumpColon","自动":"autoPump","手动":"manualPump",
+  "决策":"decisionLabel","需求":"demandLabel","条件":"conditionLabel",
+  "累计":"cumulative","次":"timesUnit","运行":"runningLabel",
+  // ── 智能建议面板 ──
+  "当前洗盐工艺阶段":"curWashStage","主洗盐":"mainWash",
+  "洗盐阈值（启动）":"washStart","达标阈值（停止）":"washStop",
+  "EC温度补偿系数":"ecTempCoeff","EC 10cm当前值":"ec10cmCur",
+  "EC 20cm当前值":"ec20cmCur","灌水定额完成率":"irrigQuotaRate",
+  "INIT 润湿":"initWet","WET 锋形成":"wetForm","LEACH 主洗盐":"leachMain",
+  "FLUSH 冲淋":"flushRinse","COMPLETE 完成":"completeState",
+  "A组 恒定滴灌":"constDrip","B组 自适应滴灌":"adaptiveDrip","预估节水率":"estimatedSaving",
+  "主控":"mainControl","视觉":"vision","KCl率定":"kclCal",
+  "R²可信度":"r2Reliability","温度补偿":"tempCompensation","整机BOM":"totalBOM",
+  "温度":"soilTemp","负荷":"loadShort","光伏占比":"solarRatio",
+  // ── 按钮 ID 绑定用的简写（反向映射到已有 key）──
+  "_navDash":"navDash","_navSoil":"navSoil","_navEnergy":"navEnergy",
+  "_navCtrl":"navCtrl","_navAdvice":"navAdvice","_navSettings":"navSettings",
+  "_loginBtn":"loginBtn","_logoutBtn":"logoutBtn","_reconnectBtn":"reconnectBtn",
+  "_langLabel":"langLabel",
+  // ── 通知设置 & 系统信息 & 动态动作条目 ──
+  "旱情预警通知":"droughtNotify","电压异常通知":"voltAnomalyNotify","EC 超标通知":"ecExceedNotify","云端断连通知":"cloudDisconNotify",
+  "系统版本":"sysVersionLabel","运行模式":"sysModeLabel","运行时长":"sysUptimeLabel","设备 ID":"deviceIdLabel",
+  "逐光巡墒 —— 智慧墒情巡检与旱情预警系统":"systemInfoTagline",
+  "检查传感器连接状态":"actionCheckSensor","确认水源与管路正常":"actionCheckWater",
+  "持续监测并分析墒情趋势湿度回升":"actioNMonitorTrend",
+  "监测湿度变化趋势":"actioNMonitorHum","继续巡检监测":"actionContinuePatrol",
+  "检查水源，补充水位":"actionCheckRefill","补电或等待风光恢复":"actionChargeWait",
+  "等待安全间歇期结束":"actionWaitInterval",
+  "三层联锁通过":"actionLockPass","风光互补供能正常":"actioNEnergyNormal","可监测跟进":"actionMonitorFollow",
+  // ── 按钮/设置文本 ──
+  "恢复默认":"restoreDefaults","通知设置":"settingsNotify"
+};
+
+// 元素 ID → i18n key 直接映射（用于按钮、流程步骤等非卡片元素）
+var idKeyMap = {
+  // 侧边栏 nav 文本
+  "navDash":"navDash","navSoil":"navSoil","navEnergy":"navEnergy","navAdvice":"navAdvice","navSettings":"navSettings",
+  // 顶栏
+  "topTitle":"topTitle","topSub":"topSub",
+  // 流程条
+  "fsDemand":"fsDemand","fsCondition":"fsCheck","fsSafe":"fsSafety","fsExec":"fsIrrig",
+  // 决策标签
+  "tagDemand":"tagDemand","tagCondition":"tagCondition","tagSafety":"tagSafety",
+  // 设置面板
+  "settingLoginBtn":"loginBtn","settingLogoutBtn":"logoutBtn","settingReconnectBtn":"reconnectBtn",
+  "langLabel":"langLabel","settingsTitle":"settingsTitle"
+};
+
+// 设置面板行标签 id → i18n key
+var settingRowMap = {
+  "settingUserCard":"cloudUser","settingLangCard":"cloudLang","settingCloudCard":"cloudConn",
+  "settingNotifyCard":"settingsNotify","settingSystemCard":"settingsSysInfo"
+};
+
+function refreshI18n(){
+  var el, orig, key, txt;
+
+  // ═══════════════════════════════════════════════
+  // 阶段 1：扫描所有静态标签元素，用 data-orig 持久化原文 → 查表翻译
+  // ═══════════════════════════════════════════════
+  var scanSel = '.lbl,.sub,.ap-l,.il-sec-t,.ov-cell-l,' +
+    '.slid-label-warn,.slid-label-ok,.slid-label-danger,' +
+    '.big-label,.salt-l,.filter-btn,.card-hdr>span:not(.lbl):not(.badge),' +
+    '.adv-stage-label,.adv-stage-name,.adv-stage-desc,.advice-tag,' +
+    '.param-label,.advice-decision-title,.advice-decision-desc,' +
+    '.lock-title,.action-item,.ov-footer>span:first-child,.ov-footer>span:last-child,' +
+    '.adv-text[id],.an-legend span,.an-en-bot .big-label,.il-row .il-name,' +
+    '.trend-node span:first-child,' +
+    'label,.info-row-label,.sys-tagline';
+
+  var allStatics = document.querySelectorAll(scanSel);
+  for (var si = 0; si < allStatics.length; si++) {
+    el = allStatics[si];
+
+    // 跳过有子元素且非纯文本的节点（如 .fs 包含 .fs-dot + .fs-n）
+    if (el.children.length > 0 && !el.matches('.lbl,.sub,.filter-btn,.big-label,.trend-node span:first-child')) continue;
+
+    // 存储/更新原始文本
+    var isDynamic = el.matches('.sub,.advice-tag,.adv-text,.salt-l,.action-item'); // 会动态变化的元素
+    if (!el.hasAttribute('data-orig') || isDynamic) {
+      orig = el.textContent.trim();
+      // 对 .lbl 去除前导 emoji/符号，得到干净中文
+      if (el.matches('.lbl')) {
+        orig = orig.replace(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}\u{2702}-\u{27B0}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2B50}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{FE0F}\u200D\u{23F0}-\u{23F3}\u{231A}\u{231B}\u{2328}\u{23CF}\u{26F0}-\u{26FF}\u{2694}\u{2695}\u{2696}\u{2697}\u{2699}\u{269B}\u{269C}\u{26A0}\u{26A1}\u{26AA}\u{26AB}\u{26BD}\u{26BE}\u{26C4}\u{26C5}\u{26C8}\u{26CE}\u{26CF}\u{26D1}\u{26D3}\u{26D4}\u{26E9}\u{26EA}\u{26F0}-\u{26FF}\u{2702}\u{2708}\u{2709}\u{270C}\u{270D}\u{270F}\u{2712}\u{2714}\u{2716}\u{271D}\u{2721}\u{2728}\u{2733}\u{2734}\u{2744}\u{2747}\u{274C}\u{274E}\u{2753}-\u{2755}\u{2757}\u{2763}\u{2764}\u{2795}-\u{2797}\u{27A1}\u{27B0}\u{27BF}\u{2934}\u{2935}\u{2B05}-\u{2B07}\u{2B1B}\u{2B1C}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}\u{FE0F}\u{200D}]+\s*/u, '');
+      }
+      el.setAttribute('data-orig', orig);
+    }
+
+    orig = el.getAttribute('data-orig');
+    key = cardLabelMap[orig];
+    if (key) {
+      txt = _(key);
+      if (txt && txt !== el.textContent) el.textContent = txt;
+    }
+  }
+
+  // ── 混合内容元素：.il-name（水位 / 电压 / 运行 / 水泵）──
+  var ilNames = document.querySelectorAll('.il-row .il-name');
+  for (var iin = 0; iin < ilNames.length; iin++) {
+    var iln = ilNames[iin];
+    if (iln.childNodes.length > 0 && iln.childNodes[0].nodeType === 3) {
+      var tn = iln.childNodes[0], ttxt = tn.textContent.trim();
+      if (!iln.hasAttribute('data-orig')) iln.setAttribute('data-orig', ttxt);
+      var tk = cardLabelMap[ttxt];
+      if (tk) { var ttr = _(tk); if (ttr && ttr !== ttxt) tn.textContent = ttr + ' '; }
+    }
+  }
+
+  // ── 混合内容元素：ov-footer span（灌水定额: / 蓄水余量:）──
+  var ovFt = document.querySelectorAll('.ov-footer>span:first-child, .ov-footer>span:last-child');
+  for (var iof = 0; iof < ovFt.length; iof++) {
+    var ofe = ovFt[iof];
+    if (ofe.childNodes.length > 0 && ofe.childNodes[0].nodeType === 3) {
+      var ofn = ofe.childNodes[0], oftxt = ofn.textContent.trim();
+      if (!ofe.hasAttribute('data-orig')) ofe.setAttribute('data-orig', oftxt);
+      var ofk = cardLabelMap[oftxt];
+      if (ofk) { var oftr = _(ofk); if (oftr && oftr !== oftxt) ofn.textContent = oftr + ' '; }
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // 阶段 2：ID/数据面板 导航元素（带子节点的 button/nav）
+  // ═══════════════════════════════════════════════
+  // nav 项（保留 emoji + 翻译文本）
+  var navItems = document.querySelectorAll('.nav-item[data-panel]');
+  for (var ni = 0; ni < navItems.length; ni++) {
+    var nv = navItems[ni];
+    if (!nv.hasAttribute('data-orig')) nv.setAttribute('data-orig', nv.textContent.trim());
+    var panel = nv.getAttribute('data-panel');
+    var nk = panel === 'dash' ? 'navDash' : panel === 'soil' ? 'navSoil' :
+      panel === 'energy' ? 'navEnergy' : panel === 'advice' ? 'navAdvice' : 'navSettings';
+    var nt = _(nk);
+    if (nt) {
+      var emoji = nv.textContent.match(/^[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B50}]+/u);
+      nv.textContent = (emoji ? emoji[0] + ' ' : '') + nt;
+    }
+  }
+
+  // 流程步骤（.fs 包含 .fs-dot + .fs-n）
+  var fsLabels = document.querySelectorAll('.fs');
+  for (var fi = 0; fi < fsLabels.length; fi++) {
+    var fe = fsLabels[fi];
+    if (!fe.hasAttribute('data-orig')) fe.setAttribute('data-orig', (fe.textContent || '').trim());
+    var fks = ['fsSense', 'fsDemand', 'fsCheck', 'fsSafe', 'fsIrrig'];
+    if (fi < fks.length) {
+      var fe_n = fe.querySelector('.fs-n');
+      var ft = _(fks[fi]);
+      if (fe_n && ft) fe_n.textContent = ft;
+    }
+  }
+
+  // 顶栏（.tb-title / .tb-subtitle）
+  var tb = document.querySelector('.tb-title');
+  if (tb) { if (!tb.hasAttribute('data-orig')) tb.setAttribute('data-orig', tb.textContent.trim()); tb.textContent = _('topTitle'); }
+  var tbs = document.querySelector('.tb-subtitle');
+  if (tbs) { if (!tbs.hasAttribute('data-orig')) tbs.setAttribute('data-orig', tbs.textContent.trim()); tbs.textContent = _('topSub'); }
+
+  // 按钮文本
+  var btns = ['settingLoginBtn', 'settingLogoutBtn', 'settingReconnectBtn'];
+  var btnKeys = ['loginBtn', 'logoutBtn', 'reconnectBtn'];
+  for (var bi = 0; bi < btns.length; bi++) {
+    var be = document.getElementById(btns[bi]);
+    if (be) be.textContent = _(btnKeys[bi]);
+  }
+  var lblEl = document.getElementById('langLabel');
+  if (lblEl) lblEl.textContent = _('langLabel');
+
+  // 设置面板卡片标题（#panel-settings .card 第一个 .lbl）
+  var sc = document.querySelector('#settingUserCard .setting-user-name');
+  if (sc) { if (!sc.hasAttribute('data-orig')) sc.setAttribute('data-orig', sc.textContent.trim()); sc.textContent = _('cloudUser'); }
+
+  // ═══════════════════════════════════════════════
+  // 阶段 3：仪表盘面板传感器行（si-row 第一个 span）
+  // ═══════════════════════════════════════════════
+  var siBindings = [
+    // [i18n key, CSS selector]
+    ['humLower', '#panel-dash .card:first-child .si-row:first-child span:first-child'],
+    ['humUpper', '#panel-dash .card:first-child .si-row:nth-child(2) span:first-child'],
+    ['humStatus', '#panel-dash .card:first-child .si-row:nth-child(3) span:first-child'],
+    ['tempRange', '#panel-dash .card:nth-child(2) .si-row:first-child span:first-child'],
+    ['tempComp', '#panel-dash .card:nth-child(2) .si-row:nth-child(2) span:first-child'],
+    ['tempStatus', '#panel-dash .card:nth-child(2) .si-row:nth-child(3) span:first-child'],
+    ['ecRange', '#panel-dash .card:nth-child(3) .si-row:first-child span:first-child'],
+    ['ecOver', '#panel-dash .card:nth-child(3) .si-row:nth-child(2) span:first-child'],
+    ['ecStatus', '#panel-dash .card:nth-child(3) .si-row:nth-child(3) span:first-child'],
+    ['phRange', '#panel-dash .card:last-child .si-row:first-child span:first-child'],
+    ['phOut', '#panel-dash .card:last-child .si-row:nth-child(2) span:first-child'],
+    ['phStatus', '#panel-dash .card:last-child .si-row:nth-child(3) span:first-child']
+  ];
+  for (var sii = 0; sii < siBindings.length; sii++) {
+    try {
+      var sels = document.querySelectorAll(siBindings[sii][1]);
+      for (var sj = 0; sj < sels.length; sj++) {
+        var siEl = sels[sj];
+        if (!siEl.hasAttribute('data-orig')) siEl.setAttribute('data-orig', siEl.textContent.trim());
+        var sit = _(siBindings[sii][0]);
+        if (sit) siEl.textContent = sit;
+      }
+    } catch (e) {}
+  }
+
+  // ═══════════════════════════════════════════════
+  // 阶段 4：动态状态文本（revMap + containMap）
+  // ═══════════════════════════════════════════════
+  var revMap = {
+    // 湿度
+    "\u504F\u5E72":"badgeDry","\u6B63\u5E38":"badgeNormal","\u5145\u8DB3":"badgeWet","\u6E7F\u6DA6":"badgeWet","\u8FBE\u6807":"humUpper",
+    "\u8F7B\u5EA6\u5E72\u65F1":"statusDry","\u4E25\u91CD\u5E72\u65F1":"statusDry","\u4E2D\u5EA6\u5E72\u65F1":"statusDry","\u9002\u5B9C":"statusNormal","\u8F7B\u5EA6\u504F\u5E72":"statusDry",
+    // 温度/EC/pH
+    "\u504F\u5DEE":"statusWarn","\u5F02\u5E38":"statusWarn","\u504F\u9AD8":"ecOver","\u8D85\u6807":"ecOver","\u4E2D\u6027":"phRange","\u504F\u78B1":"phOut","\u504F\u9178":"phOut",
+    // 泵/运行
+    "\u81EA\u52A8\u8054\u9501":"autoMode","\u624B\u52A8\u63A7\u5236":"manualMode",
+    "\u6C34\u6CF5\u8FD0\u884C":"pumpRunning","\u5F85\u673A":"pumpStopped","\u8FD0\u884C\u4E2D":"pumpRunning","\u5DF2\u505C\u6B62":"pumpStopped","\u505C\u6B62":"pumpStopped",
+    "\u8FD0\u884C":"pumpRunning","\u9501\u5B9A":"pumpStopped","\u7981\u6B62":"decisionDeny","\u5141\u8BB8":"decisionAllow",
+    // 灌溉状态
+    "\u8FBE\u6807\u505C\u673A":"pumpStopped","\u5DF2\u8FBE\u6807":"pumpStopped","\u4F4E\u6C34\u4F4D\u9501\u5B9A":"statusWarn","\u6B20\u538B\u9501\u5B9A":"statusWarn","\u8D85\u65F6\u9501\u5B9A":"statusWarn",
+    "\u81EA\u52A8\u76D1\u6D4B\u4E2D":"pumpRunning","\u81EA\u52A8\u76D1\u6D4B\u542F\u52A8":"pumpRunning","\u624B\u52A8\u8FD0\u884C":"pumpRunning","\u624B\u52A8\u505C\u6B62":"pumpStopped",
+    "\u4F4E\u6C34\u4F4D\u7981\u6B62":"statusWarn","\u6B20\u538B\u7981\u6B62":"statusWarn","\u8D85\u65F6\u7981\u6B62":"statusWarn",
+    // 决策
+    "\u5EFA\u8BAE\u5173\u6CE8":"irrigAdvice","\u6682\u4E0D\u5EFA\u8BAE\u5173\u6CE8":"monitorAdvice","\u5EFA\u8BAE\u704C\u6E89":"irrigAdvice","\u6682\u672A\u9884\u8B66":"decisionDeny",
+    "\u9AD8\u4F18\u5148\u7EA7":"irrigAdvice","\u5DF2\u5B8C\u6210":"pumpStopped","\u6682\u7F13":"decisionDeny",
+    "\u5168\u90E8\u901A\u8FC7":"irrigAdvice","\u672A\u901A\u8FC7":"statusWarn","\u5F3A\u5236":"autoMode","\u84C4\u6C34\u5145\u8DB3":"badgeWet","\u6D17\u76D0\u63A8\u8FDB":"irrigAdvice",
+    // 复合状态
+    "\u6C34\u4F4D/\u7535\u538B\u6B63\u5E38":"badgeNormal","\u6761\u4EF6\u4E0D\u8DB3":"statusWarn","\u9700\u5173\u6CE8":"statusWarn","\u4E0D\u6EE1\u8DB3":"decisionDeny",
+    // 组合词
+    "\u4E09\u5C42\u8054\u9501\u901A\u8FC7":"irrigAdvice","\u98CE\u5149\u4E92\u8865\u4F9B\u80FD\u6B63\u5E38":"badgeNormal","\u53EF\u76D1\u6D4B\u8DDF\u8FDB":"monitorAdvice",
+    "\u5EFA\u8BAE\u76D1\u6D4B\u8DDF\u8FDB":"monitorAdvice","\u6682\u672A\u9884\u8B66\uFF0C\u6301\u7EED\u89C2\u5BDF":"decisionDeny","\u76D1\u6D4B\u6B63\u5E38\uFF0C\u5F85\u673A\u89C2\u5BDF":"pumpStopped",
+    "\u6B20\u538B":"statusWarn","\u504F\u4F4E":"ecOver","\u504F\u4F4E \u25B2":"ecOver","\u6B20\u538B \u25BC":"statusWarn",
+    "\u5F53\u524D\u5878\u60C5\u4F4E\u4E8E\u7530\u630160%\uFF0C\u6EE1\u8DB3\u704C\u6E89\u6761\u4EF6\uFF0C\u4E09\u5C42\u8054\u9501\u5747\u901A\u8FC7\uFF0C\u5EFA\u8BAE\u542F\u52A8\u704C\u6E89\u3002":"monitorAdvice",
+    "\u5EFA\u8BAE\u76D1\u6D4B\u8DDF\u8FDB":"monitorAdvice"
+  };
+  var containMap = [
+    ["\u5DF2\u8FBE","pumpStopped"],["\u505C\u6B62\u9608\u503C","pumpStopped"],["\u6E7F\u5EA6\u2265","pumpStopped"],["\u5F85\u673A","pumpStopped"],
+    ["\u5DF2\u8FBE\u6807(","pumpStopped"],["\u7981\u6B62","statusWarn"],
+    ["\u4E09\u5C42\u8054\u9501\u901A\u8FC7","irrigAdvice"],["\u5EFA\u8BAE\u76D1\u6D4B\u8DDF\u8FDB","monitorAdvice"],
+    ["\u6E7F\u5EA6\u5DF2\u8FBE\u9002\u5B9C\u8303\u56F4","badgeNormal"],["\u6E7F\u5EA6\u672A\u8FBE\u9608\u503C","statusWarn"],["\u6C34\u4F4D\u4E0D\u8DB3","statusWarn"],
+    ["\u6B20\u538B\u95ED\u9501","statusWarn"],["\u5B89\u5168\u95F4\u6B47","statusWarn"],["\u704C\u6E89\u6B63\u5E38\u5B8C\u6210","pumpStopped"]
+  ];
+  var fullEls = ["decText","decDetail","decBadge","cDecLabel",
+    "cDemandShort","cCondShort","cPumpLabel","cModeLabel",
+    "ctrlPumpBadge","pumpLabel3","ilPumpStatus",
+    "advActionBadge","advActionTitle","advActionDesc","advDecTitle","advDecDesc",
+    "advActionList","advDecTags","advBanner","advDecIcon","advReasons",
+    "humBdg","tempBdg","ecBdg","phBdg",
+    "humSt","tempSt","ecSt","phSt",
+    "ilModeInfo","enVoltSt","enLoadSt","advLockBadge","advLevel","advTrend",
+    "mCurHumLabel","irrigOverviewBdg","ovPhase","ovFront",
+    "cIrrigTimes","cIrrigDuration","irrigQuota","advPHum","advBattV"];
+  for (var ds = 0; ds < fullEls.length; ds++) {
+    var de = document.getElementById(fullEls[ds]); if (!de) continue;
+    var raw = (de.textContent || "").trim(), mapKey = revMap[raw];
+    if (mapKey) { var dnt = _(mapKey); if (dnt && dnt !== raw) de.textContent = dnt; }
+    else { for (var dc = 0; dc < containMap.length; dc++) { if (raw.indexOf(containMap[dc][0]) >= 0) { var dnt2 = _(containMap[dc][1]); if (dnt2 && dnt2 !== raw) de.textContent = dnt2; break; } } }
+    if (de.innerHTML && de.innerHTML.indexOf("\u25CF") >= 0 && de.id === "ilPumpStatus") {
+      var ih2 = de.innerHTML.replace(/<[^>]*>/g, '').trim().replace(/^\u25CF\s*/, '');
+      var ik2 = revMap[ih2];
+      if (ik2) { var inew2 = _(ik2); if (inew2 && inew2 !== ih2) { var hd2 = de.innerHTML; de.innerHTML = hd2.replace(/>[^<]*</, '>' + inew2 + '<'); } }
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // 阶段 5：设置面板的 .setting-row 标签文本
+  // ═══════════════════════════════════════════════
+  var settingRows = document.querySelectorAll('.setting-row');
+  for (var sri = 0; sri < settingRows.length; sri++) {
+    var srEl = settingRows[sri].querySelector('.lbl');
+    if (!srEl) continue;
+    if (!srEl.hasAttribute('data-orig')) srEl.setAttribute('data-orig', srEl.textContent.trim());
+    var srOrig = srEl.getAttribute('data-orig');
+    var srKey = cardLabelMap[srOrig];
+    if (srKey) { var srt = _(srKey); if (srt) srEl.textContent = srt; }
+  }
+}
+
+// === 设置面板：登录/登出 & 语言切换 ===
+var userInfo=null;
+function loadUser(){try{var d=localStorage.getItem("salt_user");if(d)userInfo=JSON.parse(d);}catch(e){userInfo=null;}}
+loadUser();
+function updateSettingUI(){
+  var av=document.getElementById("settingAvatar"),nm=document.getElementById("settingUserName"),
+      rl=document.getElementById("settingUserRole"),li=document.getElementById("settingLoginBtn"),
+      lo=document.getElementById("settingLogoutBtn"),uv=document.getElementById("sb-username");
+  if(userInfo){
+    if(av)av.textContent=userInfo.name.charAt(0);if(nm)nm.textContent=userInfo.name;
+    if(rl)rl.textContent=userInfo.role||_("userRole");if(li)li.style.display="none";
+    if(lo)lo.style.display="inline-block";if(uv)uv.textContent=userInfo.name;
+  }else{
+    if(av)av.textContent="管";if(nm)nm.textContent=_("userName");if(rl)rl.textContent=_("userRole");
+    if(li)li.style.display="inline-block";if(lo)lo.style.display="none";if(uv)uv.textContent=_("userName");
+  }
+}
+updateSettingUI();
+function doLogin(){
+  var n=prompt(_("loginPrompt"),"admin");
+  if(!n)return;
+  userInfo={name:n,role:"操作员",loginAt:new Date().toISOString()};
+  localStorage.setItem("salt_user",JSON.stringify(userInfo));
+  updateSettingUI();
+}
+function doLogout(){userInfo=null;localStorage.removeItem("salt_user");updateSettingUI();}
+var currentLang=localStorage.getItem("salt_lang")||"zh";
+function applyLang(l){
+  currentLang=l;localStorage.setItem("salt_lang",l);
+  var s=document.getElementById("langSelect");if(s)s.value=l;
+  refreshI18n();
+  redrawAll();
+}
+function updateCloudLabel(){
+  var lb=document.getElementById("settingsCloudLabel");
+  if(!lb)return;
+  var t=lb.textContent;var key;
+  if(t.indexOf("MQTT")>=0)key="connMQTT";
+  else if(t.indexOf("HTTP")>=0)key="connHTTP";
+  else key="connOff";
+  lb.textContent=_(key);
+}
+applyLang(currentLang);
+function switchLang(v){applyLang(v);updateSettingUI();upDec();updateAdvice();refreshI18n();}
+function reconnectCloud(){connMode="offline";hasCloud=false;lastCloud=0;connectMQTT();startHTTPFallback();}
+// 云端状态同步到设置面板
+var origSetConn=setConn;
+setConn=function(st,label){
+  origSetConn(st,label);
+  var dot=document.getElementById("settingsCloudDot"),lb=document.getElementById("settingsCloudLabel");
+  if(dot&&lb){
+    if(st==="mqtt"){dot.style.background="#009a4e";dot.style.boxShadow="0 0 6px rgba(0,154,78,.4)";lb.textContent=_(hasCloud?"cloudFresh":"connMQTT");}
+    else if(st==="http"){dot.style.background="#f57c00";dot.style.boxShadow="0 0 6px rgba(245,124,0,.4)";lb.textContent=_("connHTTP");}
+    else{dot.style.background="#d32f2f";dot.style.boxShadow="0 0 6px rgba(211,47,47,.4)";lb.textContent=_("connOff");}
+  }
+};
+
+// 绑定设置面板事件（解决 IIFE 闭包作用域问题）
+(function bindSettingsEvents(){
+  var el;
+  el=document.getElementById("settingLoginBtn");if(el)el.addEventListener("click",doLogin);
+  el=document.getElementById("settingLogoutBtn");if(el)el.addEventListener("click",doLogout);
+  el=document.getElementById("settingReconnectBtn");if(el)el.addEventListener("click",reconnectCloud);
+  el=document.getElementById("langSelect");if(el)el.addEventListener("change",function(){switchLang(this.value);});
+  el=document.getElementById("setTheme");if(el)el.addEventListener("change",function(){applyTheme(this.value);});
+  el=document.getElementById("setRefresh");if(el){el.value=localStorage.getItem("salt_refresh")||"250";el.addEventListener("change",function(){changeRefresh(parseInt(this.value));});}
+  el=document.getElementById("setTempUnit");if(el){el.value=localStorage.getItem("salt_tempUnit")||"celsius";el.addEventListener("change",function(){setTempUnit(this.value);});}
+  // 通知开关
+  el=document.getElementById("toggDry");if(el)el.addEventListener("click",function(){toggleNotification("dry",this);});
+  el=document.getElementById("toggVolt");if(el)el.addEventListener("click",function(){toggleNotification("volt",this);});
+  el=document.getElementById("toggEc");if(el)el.addEventListener("click",function(){toggleNotification("ec",this);});
+  el=document.getElementById("toggCloud");if(el)el.addEventListener("click",function(){toggleNotification("cloud",this);});
+  // 装载阈值
+  loadThresholds();
+})();
+
+// === 主题切换 ===
+function applyTheme(mode){
+  localStorage.setItem("salt_theme",mode);
+  if(mode==="dark")document.body.classList.add("dark-theme");
+  else document.body.classList.remove("dark-theme");
+}
+
+// === 数据刷新间隔 ===
+var refreshInterval=parseInt(localStorage.getItem("salt_refresh")||"250");
+var refreshTimer=null;
+function changeRefresh(ms){
+  refreshInterval=ms;localStorage.setItem("salt_refresh",""+ms);
+  clearInterval(refreshTimer);
+  refreshTimer=setInterval(function(){tickLoop();},ms);
+}
+function tickLoop(){
+  if(dataLock)return;dataLock=true;
+  try{
+  t++;var mb=document.getElementById("mb");if(mb)mb.textContent=t;
+  if(connMode==="offline"&&!httpTimer){setConn("offline",_("connectingLabel"));startHTTPFallback();connectMQTT();}
+  var freshCloud=hasCloud&&(Date.now()-lastCloud<10000);
+  if(!freshCloud){if(pump)hum+=Math.random()*1.2;else hum-=Math.random()*1.0;hum=Math.max(15,Math.min(90,hum));light+=(Math.random()-0.5)*1200;light=Math.max(5000,Math.min(90000,light));temp+=(Math.random()-0.5)*0.5;temp=Math.max(20,Math.min(38,temp));ph+=(Math.random()-0.5)*0.08;ph=Math.max(4,Math.min(11,ph));salinity+=(Math.random()-0.5)*0.04;salinity=Math.max(0,Math.min(5,salinity));ec+=(Math.random()-0.5)*0.08;ec=Math.max(0,Math.min(5,ec));nitro+=(Math.random()-0.5)*0.4;nitro=Math.max(0,Math.min(200,nitro));phos+=(Math.random()-0.5)*0.4;phos=Math.max(0,Math.min(200,phos));potass+=(Math.random()-0.5)*0.4;potass=Math.max(0,Math.min(200,potass));}
+  bat-=(Math.random()-0.42)*0.06;bat=Math.max(10.5,Math.min(14.5,bat));wind+=(Math.random()-0.5)*0.6;wind=Math.max(0,Math.min(12,wind));windHist.push(wind);if(windHist.length>20)windHist.shift();
+  if(pump){runSec+=0.5;irrigD=Math.round((irrigD+0.15)*10)/10;}
+  if(pump){ec10-=(Math.random()*0.04+0.01);ec20-=(Math.random()*0.03+0.005);}else{ec10+=(Math.random()-0.35)*0.015;ec20+=(Math.random()-0.35)*0.01;}ec10=Math.max(0.3,Math.min(4.5,ec10));ec20=Math.max(0.2,Math.min(3.5,ec20));
+  frontSpeed+=(Math.random()-0.48)*0.005;frontSpeed=Math.max(0.1,Math.min(0.9,frontSpeed));frontDepth+=frontSpeed*2;frontDepth=Math.min(50,frontDepth);frontPhase=frontDepth<20?0:(frontDepth<30?1:(frontDepth<40?2:(frontDepth<45?3:4)));
+  envH=Math.round(Math.max(40,Math.min(85,envH+(Math.random()-0.5)*4)));
+  // DOM updates
+  upP();upDec();updateAdvice();upClock();
+  var solarP=light/2500,loadP=pump?12.3:2.8,windP=Math.max(0,wind*wind*0.4),totalP=solarP+windP;
+  var eBS=document.getElementById("enBalanceSolar");if(eBS)eBS.textContent=solarP.toFixed(1);
+  var eBL=document.getElementById("enBalanceLoad");if(eBL)eBL.textContent=loadP.toFixed(1);
+  hd.shift();wd.shift();bd.shift();hd.push(hum+(Math.random()-.5)*14);wd.push(wind+(Math.random()-.5)*2.2);bd.push(bat+(Math.random()-.5)*0.6);
+  hh.push(hum);tempHist.push(temp);ecHist.push(ec);phHist.push(ph);
+  if(hh.length>80)hh.shift();if(tempHist.length>80)tempHist.shift();if(ecHist.length>80)ecHist.shift();if(phHist.length>80)phHist.shift();
+  pHist.push(hum);if(pHist.length>120)pHist.shift();ec10Hist.push(ec10);if(ec10Hist.length>20)ec10Hist.shift();ec20Hist.push(ec20);if(ec20Hist.length>20)ec20Hist.shift();
+  solarHist.push(light/2500+(Math.random()-.5)*12);if(solarHist.length>20)solarHist.shift();loadHist.push((pump?12.3:2.8)+(Math.random()-.5)*5);if(loadHist.length>20)loadHist.shift();
+  pulseHist.push(pump?8:1);if(pulseHist.length>30)pulseHist.shift();
+  var cit=document.getElementById("cIrrigTimes");if(cit)cit.textContent=_f("cumulativeXTimes",Math.floor(irrigD/40));
+  var cid=document.getElementById("cIrrigDuration");if(cid)cid.textContent=_f("runningXhXm",Math.floor(runSec/3600),Math.floor((runSec%3600)/60));
+  var iq=document.getElementById("irrigQuota");if(iq)iq.textContent=Math.round(Math.min(100,irrigD/150*100))+"%";
+  safeRedraw();
+  var up=document.getElementById("setUptime");if(up)up.textContent=Math.floor(t/4)+"s";
+  }catch(e){}finally{dataLock=false;}
+}
+refreshTimer=setInterval(function(){tickLoop();},refreshInterval);
+
+// === 温度单位 ===
+var tempUnit="celsius";
+function setTempUnit(u){tempUnit=u;localStorage.setItem("salt_tempUnit",u);}
+setTempUnit(localStorage.getItem("salt_tempUnit")||"celsius");
+
+// === 阈值管理 ===
+function loadThresholds(){
+  try{var d=localStorage.getItem("salt_thresholds");if(d){var th=JSON.parse(d);
+    var el;el=document.getElementById("setHumMin");if(el)el.value=th.humMin||35;
+    el=document.getElementById("setHumMax");if(el)el.value=th.humMax||70;
+    el=document.getElementById("setTempMin");if(el)el.value=th.tempMin||18;
+    el=document.getElementById("setTempMax");if(el)el.value=th.tempMax||30;
+    el=document.getElementById("setEcMax");if(el)el.value=th.ecMax||3.5;
+    el=document.getElementById("setPhMax");if(el)el.value=th.phMax||8.5;
+  }}catch(e){}
+}
+function saveThresholds(){
+  var th={humMin:parseFloat(document.getElementById("setHumMin").value)||35,humMax:parseFloat(document.getElementById("setHumMax").value)||70,
+          tempMin:parseFloat(document.getElementById("setTempMin").value)||18,tempMax:parseFloat(document.getElementById("setTempMax").value)||30,
+          ecMax:parseFloat(document.getElementById("setEcMax").value)||3.5,phMax:parseFloat(document.getElementById("setPhMax").value)||8.5};
+  localStorage.setItem("salt_thresholds",JSON.stringify(th));
+  alert("阈值已保存");
+}
+
+// === 通知开关 ===
+function toggleNotification(type,el){
+  var on=el.classList.toggle("on");
+  var notif=JSON.parse(localStorage.getItem("salt_notif")||"{}");
+  notif[type]=on;
+  localStorage.setItem("salt_notif",JSON.stringify(notif));
+}
+(function loadNotifications(){
+  try{var notif=JSON.parse(localStorage.getItem("salt_notif")||"{}");
+    var el;el=document.getElementById("toggDry");if(el&&notif.dry)el.classList.add("on");
+    el=document.getElementById("toggVolt");if(el&&notif.volt===false)el.classList.remove("on");
+    el=document.getElementById("toggEc");if(el&&notif.ec===false)el.classList.remove("on");
+    el=document.getElementById("toggCloud");if(el&&notif.cloud)el.classList.add("on");
+  }catch(e){}
+})();
+
+// === 恢复默认 ===
+function resetAllSettings(){
+  if(!confirm("确定恢复所有设置为默认值？"))return;
+  localStorage.removeItem("salt_thresholds");localStorage.removeItem("salt_notif");localStorage.removeItem("salt_lang");
+  localStorage.removeItem("salt_theme");localStorage.removeItem("salt_refresh");localStorage.removeItem("salt_tempUnit");
+  currentLang="zh";applyLang("zh");
+  if(document.getElementById("setRefresh"))document.getElementById("setRefresh").value="250";
+  if(document.getElementById("setTempUnit"))document.getElementById("setTempUnit").value="celsius";
+  changeRefresh(250);
+  loadThresholds();
+  loadNotifications();
+  alert("已恢复默认设置");
+}
 
 })();
 </script>
